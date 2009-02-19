@@ -1,3 +1,6 @@
+-ifndef(_EWGI_HRL).
+-define(_EWGI_HRL, 1).
+
 % ``The contents of this file are subject to the Mozilla Public License
 % Version 1.1 (the "License"); you may not use this file except in
 % compliance with the License. You may obtain a copy of the License at
@@ -206,3 +209,5 @@
 
 %% @type ewgi_app() = function()
 -type ewgi_app() :: fun((#ewgi_context{}) -> #ewgi_context{}).
+
+-endif.
