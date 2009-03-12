@@ -55,7 +55,7 @@
 -export([get_header_value/2, set_header/3, insert_header/3,
          get_all_headers/1, read_input/1, read_input/3, read_input_string/2,
          write_error/2, url_scheme/1, version/1, get_all_data/1, find_data/2,
-         store_data/3]).
+         find_data/3, store_data/3]).
 
 %% Server methods
 -export([server_request_foldl/4]).
