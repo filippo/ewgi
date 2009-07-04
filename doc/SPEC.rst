@@ -108,16 +108,16 @@ to some application(s), while also acting as an application with
 respect to some server(s).  Such "middleware" components can perform
 such functions as:
 
- * Routing a request to different application objects based on the
-   target URL, after rewriting the ``Request`` accordingly.
+* Routing a request to different application objects based on the
+  target URL, after rewriting the ``Request`` accordingly.
 
- * Allowing multiple applications or frameworks to run side-by-side in
-   the same process
+* Allowing multiple applications or frameworks to run side-by-side in
+  the same process
 
- * Load balancing and remote processing by forwarding requests and
-   responses over a network
+* Load balancing and remote processing by forwarding requests and
+  responses over a network
 
- * Content postprocessing, such as applying XSL stylesheets
+* Content postprocessing, such as applying XSL stylesheets
 
 The presence of middleware in general is transparent to both the
 "server/gateway" and the "application/framework" sides of the
