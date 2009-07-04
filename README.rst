@@ -43,7 +43,7 @@ Reference implementations
 
 The current server reference implementations include:
 
-* `Mochiweb`_
+* `MochiWeb`_
 * `Yaws`_
 * `inets`_
 
@@ -51,7 +51,7 @@ The current server reference implementations include:
     http://www.python.org/dev/peps/pep-0333/
 .. _Rack:
     http://rack.rubyforge.org/
-.. _Mochiweb:
+.. _MochiWeb:
     http://code.google.com/p/mochiweb/
 .. _Yaws:
     http://yaws.hyber.org/
