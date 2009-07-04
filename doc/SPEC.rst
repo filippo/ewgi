@@ -61,7 +61,7 @@ virtually all servers/gateways will make such repeated requests.  The
 function should return a similarly-structured 3-tuple argument.  The
 3-tuple may be defined by a record for convenience, but this is not
 required.  The first element of the context tuple MUST be the atom
-`'ewgi_context'`.
+``'ewgi_context'``.
 
 `Note: although we refer to it as an "application", this should not be
 construed to mean that application developers will use EWGI as a web
@@ -109,7 +109,7 @@ respect to some server(s).  Such "middleware" components can perform
 such functions as:
 
  * Routing a request to different application objects based on the
-   target URL, after rewriting the `Request` accordingly.
+   target URL, after rewriting the ``Request`` accordingly.
 
  * Allowing multiple applications or frameworks to run side-by-side in
    the same process
@@ -183,17 +183,17 @@ Specification Details
 
 The application callable must accept one 3-tuple argument.  For the
 sake of illustration, we have named the second and third elements of
-this tuple `request` and `response`, and the specification shall refer
-to them by those names.  A server or gateway must invoke the callable
-by passing the tuple argument (e.g. by calling `Result =
-Application({ewgi_context, Request, Response})` as shown above).
+this tuple ``request`` and ``response``, and the specification shall
+refer to them by those names.  A server or gateway must invoke the
+callable by passing the tuple argument (e.g. by calling ``Result =
+Application({ewgi_context, Request, Response})`` as shown above).
 
 Request
 -------
 
-The `Request` parameter is a tuple containing various CGI-influenced
+The ``Request`` parameter is a tuple containing various CGI-influenced
 environment variables.  This term must be an 21-tuple, and the
-application is allowed to modify the `Request` in any way it desires
+application is allowed to modify the ``Request`` in any way it desires
 (except for HTTP header restrictions outlined later).  Element 5 of
 the tuple must itself be a 6-tuple including certain EWGI-required
 terms (described in a later section), and may also include
@@ -247,169 +247,170 @@ convenience::
 EWGI request variables
 ''''''''''''''''''''''
 
-The `Request` tuple is required to contain these CGI environment
+The ``Request`` tuple is required to contain these CGI environment
 variables, as originally defined by the `Common Gateway Interface
 specification`_.
 
-`auth_type`: (Element 2) The type of authentication provided or
-`'undefined'` if absent.
+``auth_type``: (Element 2) The type of authentication provided or
+``'undefined'`` if absent.
 
-`content_length`: (Element 3) The contents of any `Content-Length`
-fields in the HTTP request. May be empty or `'undefined'`.
+``content_length``: (Element 3) The contents of any ``Content-Length``
+fields in the HTTP request. May be empty or ``'undefined'``.
 
-`content_type`: (Element 4) The contents of any `Content-Type` fields
-in the HTTP request. May be empty or `'undefined'`.
+``content_type``: (Element 4) The contents of any ``Content-Type``
+fields in the HTTP request. May be empty or ``'undefined'``.
 
-`ewgi`: (Element 5) See section below
+``ewgi``: (Element 5) See section below
 
-`gateway_interface`: (Element 6) The gateway interface and revision
-used. Should be `EWGI/1.1` for this version of the specification.
+``gateway_interface``: (Element 6) The gateway interface and revision
+used. Should be ``EWGI/1.1`` for this version of the specification.
 
-`http_headers`: (Element 7) See section below
+``http_headers``: (Element 7) See section below
 
-`path_info`: (Element 8) The remainder of the request URL's "path",
+``path_info``: (Element 8) The remainder of the request URL's "path",
 designating the virtual "location" of the request's target within the
 application.  This may be an empty string, if the request URL targets
 the application root and does not have a trailing slash.
 
-`path_translated`: (Element 9) The path as may be translated by the
+``path_translated``: (Element 9) The path as may be translated by the
 server to a physical location.
 
-`query_string`: (Element 10) The portion of the request URL that
-follows the `"?"`, if any. May be empty or `'undefined'`.
+``query_string``: (Element 10) The portion of the request URL that
+follows the ``"?"``, if any. May be empty or ``'undefined'``.
 
-`remote_addr`: (Element 11) The remote IP address of the client
+``remote_addr``: (Element 11) The remote IP address of the client
 issuing the request
 
-`remote_host`: (Element 12) The remote hostname of the client issuing
-the request. May be empty or `'undefined'`.
+``remote_host``: (Element 12) The remote hostname of the client
+issuing the request. May be empty or ``'undefined'``.
 
-`remote_ident`: (Element 13) If the server supports RFC 931
+``remote_ident``: (Element 13) If the server supports `RFC 931`_
 identification, this variable may be set to the remote user
 name. Should only be used for logging purposes.
 
-`remote_user`: (Element 14) If authentication is supported by the
+``remote_user``: (Element 14) If authentication is supported by the
 server (or middleware), this should be set to the authenticated
 username.
 
-`remote_user_data`: (Element 15) Any additional data provided by the
+``remote_user_data``: (Element 15) Any additional data provided by the
 authentication mechanism.
 
-`request_method`: (Element 16) An atom or string describing the HTTP
-request method.  Common methods MUST be atoms and include `'OPTIONS'`,
-`'GET'`, `'HEAD'`, `'POST'`, `'PUT'`, `'DELETE'`, `'TRACE'`, and
-`'CONNECT'`.  A value is always required and it MUST NOT be an empty
-string.
+``request_method``: (Element 16) An atom or string describing the HTTP
+request method.  Common methods MUST be atoms and include
+``'OPTIONS'``, ``'GET'``, ``'HEAD'``, ``'POST'``, ``'PUT'``,
+``'DELETE'``, ``'TRACE'``, and ``'CONNECT'``.  A value is always
+required and it MUST NOT be an empty string.
 
-`script_name`: (Element 17) The initial portion of the request URL's
+``script_name``: (Element 17) The initial portion of the request URL's
 "path" that corresponds to the application object, so that the
 application knows its virtual "location".  This may be an empty
 string, if the application corresponds to the "root" of the server.
 
-`server_name`, `server_port`: (Element 18,19) When combined with
-`script_name` and `path_info`, these variables can be used to complete
-the URL.  Note, however, that `http_host`, if present, should be used
-in preference to `server_name` for reconstructing the request
-URL. `server_name` and `server_port` can never be empty strings, and
-so are always required.
+``server_name``, ``server_port``: (Element 18,19) When combined with
+``script_name`` and ``path_info``, these variables can be used to
+complete the URL.  Note, however, that ``http_host``, if present,
+should be used in preference to ``server_name`` for reconstructing the
+request URL. ``server_name`` and ``server_port`` can never be empty
+strings, and so are always required.
 
-`server_protocol`: (Element 20) The version of the protocol the client
-used to send the request. Typically this will be something like
-`"HTTP/1.0"` or `"HTTP/1.1"`and may be used by the application to
+``server_protocol``: (Element 20) The version of the protocol the
+client used to send the request. Typically this will be something like
+``"HTTP/1.0"`` or ``"HTTP/1.1"``and may be used by the application to
 determine how to treat any HTTP request headers.  (This variable
-should probably be called `request_protocol`, since it denotes the
+should probably be called ``request_protocol``, since it denotes the
 protocol used in the request, and is not necessarily the protocol that
 will be used in the server's response.  However, for compatibility
 with CGI we have to keep the existing name).
 
-`server_software`: (Element 21) The name and revision of the server
+``server_software``: (Element 21) The name and revision of the server
 software answering the request.
 
 EWGI-specification parameters
 '''''''''''''''''''''''''''''
 
-`read_input`: (Element 2) A 2-arity function which takes a `Callback`
-1-arity function and a `Size` non-zero integer.  The `Callback`
-function will be called with chunks of data in the form `{data, Bin}`
-where `Bin` is a binary.  At the end of reading, the `Callback`
-function will be called with `eof` as its argument.  The supplied
-function should return another function of the same kind.
+``read_input``: (Element 2) A 2-arity function which takes a
+``Callback`` 1-arity function and a ``Size`` non-zero integer.  The
+``Callback`` function will be called with chunks of data in the form
+``{data, Bin}`` where ``Bin`` is a binary.  At the end of reading, the
+``Callback`` function will be called with ``eof`` as its argument.
+The supplied function should return another function of the same kind.
 
-`write_error`: (Element 3) A 1-arity function which takes an `iolist`
-and writes to the server-defined error log mechanism (usually
-`error_logger`).
+``write_error``: (Element 3) A 1-arity function which takes an
+``iolist`` and writes to the server-defined error log mechanism
+(usually ``error_logger``).
 
-`url_scheme`: (Element 4) A string representing the "scheme" portion
+``url_scheme``: (Element 4) A string representing the "scheme" portion
 of the URL at which the application is being invoked. Normally, this
-will have the value `"http"` or `"https"` where appropriate.
+will have the value ``"http"`` or ``"https"`` where appropriate.
 
-`version`: (Element 5) The tuple `{1,1}`, representing EWGI major
+``version``: (Element 5) The tuple ``{1,1}``, representing EWGI major
 version 1, minor version 1.
 
-`data`: (Element 6) A dictionary (implemented by the OTP module
-`gb_trees`) which can be used for server or application-specific data
-to be included with the request.  A common use for this dictionary is
-in configuring higher-level web frameworks or providing cached
-data. Additionally, a server or gateway should attempt to provide as
-many other CGI variables as are applicable.  In addition, if SSL is in
-use, the server or gateway should also provide as many of the `Apache
-SSL environment variables`_ as are applicable, such as `https` and
-`ssl_protocol`.  Note, however, that an application that uses any CGI
-variables other than the ones listed above are necessarily
-non-portable to web servers that do not support the relevant
-extensions. An EWGI-compliant server or gateway should document what
-variables it provides, along with their definitions as appropriate.
-Applications should check for the presence of any variables they
-require, and have a fallback plan in the event such a variable is
-`'undefined'`.
+``data``: (Element 6) A dictionary (implemented by the OTP module
+``gb_trees``) which can be used for server or application-specific
+data to be included with the request.  A common use for this
+dictionary is in configuring higher-level web frameworks or providing
+cached data. Additionally, a server or gateway should attempt to
+provide as many other CGI variables as are applicable.  In addition,
+if SSL is in use, the server or gateway should also provide as many of
+the `Apache SSL environment variables`_ as are applicable, such as
+``https`` and ``ssl_protocol``.  Note, however, that an application
+that uses any CGI variables other than the ones listed above are
+necessarily non-portable to web servers that do not support the
+relevant extensions. An EWGI-compliant server or gateway should
+document what variables it provides, along with their definitions as
+appropriate.  Applications should check for the presence of any
+variables they require, and have a fallback plan in the event such a
+variable is ``'undefined'``.
 
 HTTP headers
 ''''''''''''
 
 EWGI provides a tuple with commonly-used HTTP request headers to
 optimise retrieval.  Each of the values is a list of 2-tuples of the
-form {`FieldName`, `FieldValue`}.  Servers MUST preserve the order of
-headers as they are given in the request.  Servers SHOULD preserve the
-case of the `FieldName` values.
+form {``FieldName``, ``FieldValue``}.  Servers MUST preserve the order
+of headers as they are given in the request.  Servers SHOULD preserve
+the case of the ``FieldName`` values.
 
-`http_accept`: (Element 2) The `Accept:` header
+``http_accept``: (Element 2) The ``Accept:`` header
 
-`http_cookie`: (Element 3) The `Cookie:` header
+``http_cookie``: (Element 3) The ``Cookie:`` header
 
-`http_host`: (Element 4) The `Host:` header
+``http_host``: (Element 4) The ``Host:`` header
 
-`http_if_modified_since`: (Element 5) The `If-Modified-Since:` header
+``http_if_modified_since``: (Element 5) The ``If-Modified-Since:``
+header
 
-`http_user_agent`: (Element 6) The `User-Agent:` header
+``http_user_agent``: (Element 6) The ``User-Agent:`` header
 
-`http_x_http_method_override`: (Element 7) The
-`X-Http-Method-Override:` header.  While not part of the HTTP 1.1
+``http_x_http_method_override``: (Element 7) The
+``X-Http-Method-Override:`` header.  While not part of the HTTP 1.1
 specification, this header can be used to overcome a common browser
-limitation which prevents browsers from sending a `PUT` or `DELETE`
-request to a URI.
+limitation which prevents browsers from sending a ``PUT`` or
+``DELETE`` request to a URI.
 
-`other`: (Element 8) A multiset (implemented by the OTP module
-`gb_trees`) which contains all other HTTP request headers. The keys of
-the dictionary should be lower-case representations of the header
+``other``: (Element 8) A multiset (implemented by the OTP module
+``gb_trees``) which contains all other HTTP request headers. The keys
+of the dictionary should be lower-case representations of the header
 names and the values should be a list of tuples of the form
-{`HeaderName`, `HeaderValue`}.  Servers SHOULD attempt to preserve the
-original case of header names in the tuple list.
+{``HeaderName``, ``HeaderValue``}.  Servers SHOULD attempt to preserve
+the original case of header names in the tuple list.
 
 Notes
 '''''
 
-Missing variables (where allowed, such as `remote_user` when no
+Missing variables (where allowed, such as ``remote_user`` when no
 authentication has occurred) should be defined by the atom
-`'undefined'`.  Also note that CGI-defined variables must be strings
+``'undefined'``.  Also note that CGI-defined variables must be strings
 if they are defined.  It is a violation of this specification for a
-CGI variable's value to be of any type other than `string` or the
-`'undefined'` atom.
+CGI variable's value to be of any type other than ``string`` or the
+``'undefined'`` atom.
 
 Response
 --------
 
-The `Response` parameter is a 5-tuple of the form `{ewgi_response,
-{StatusCode, ReasonPhrase}, HeaderList, MessageBody, Error}`. and A
+The ``Response`` parameter is a 5-tuple of the form ``{ewgi_response,
+{StatusCode, ReasonPhrase}, HeaderList, MessageBody, Error}``. and A
 convenient record definition is::
 
     -record(ewgi_response, {
@@ -422,39 +423,39 @@ convenient record definition is::
 Status Code
 '''''''''''
 
-The `StatusCode` parameter should be a 3-digit integer corresponding
-to the HTTP status code as defined in the HTTP specification (See RFC
-2616, Section 6.1.1 for more information).  For example, `200`
+The ``StatusCode`` parameter should be a 3-digit integer corresponding
+to the HTTP status code as defined in the HTTP specification (See `RFC
+2616, Section 6.1.1`_ for more information).  For example, ``200``
 corresponds to a successful request.
 
 Reason Phrase
 '''''''''''''
 
-The `ReasonPhrase` parameter is intended to be a human readable
-representation of `StatusCode` and should be a string or binary.
+The ``ReasonPhrase`` parameter is intended to be a human readable
+representation of ``StatusCode`` and should be a string or binary.
 
 Headers
 '''''''
 
-`Headers` is a list of `{HeaderName, HeaderValue}` tuples describing
-the HTTP response headers.
+``Headers`` is a list of ``{HeaderName, HeaderValue}`` tuples
+describing the HTTP response headers.
 
-Each `HeaderName` must be a valid HTTP header field-name (as defined
-by RFC 2616, Section 4.2), without a trailing colon or bother
-punctuation.  Note: `HeaderName` is case insensitive, but should be
+Each ``HeaderName`` must be a valid HTTP header field-name (as defined
+by `RFC 2616, Section 4.2`_), without a trailing colon or bother
+punctuation.  Note: ``HeaderName`` is case insensitive, but should be
 lower-case for optimising comparisons. (A reminder for server/gateway
 authors: be sure to take that into consideration when examining
 application-supplied headers).
 
-Each `HeaderValue` must not include any control characters, including
-CR or LF, in any position.
+Each ``HeaderValue`` must not include any control characters,
+including CR or LF, in any position.
 
 In general, the server or gateway is responsible for ensuring that
 correct headers are sent to the client: if the application omits a
 header required by HTTP (or other relevant specifications that are in
 effect), the server or gateway must add it.  For example, the HTTP
-`Date:` and `Server:` headers would normally be supplied by the server
-or gateway.
+``Date:`` and ``Server:`` headers would normally be supplied by the
+server or gateway.
 
 Applications and middleware are forbidden from using HTTP/1.1
 "hop-by-hop" features or headers, any equivalent features in HTTP/1.0,
@@ -471,20 +472,20 @@ For example::
 Message Body
 ''''''''''''
 
-The `MessageBody` parameter is either an `iolist` or a "stream," which
-is a lazy, recursive list-like structure.  A stream is a zero-arity
-function which returns either the empty tuple `{}` or a 2-tuple of the
-form `{Head, Tail}` where `Head` is an `iolist` and `Tail` is another
-stream.  Servers may choose to transmit message bodies represented by
-a stream using the chunked transfer encoding.  However, the server or
-gateway must transmit `iolist`s to the client in an unbuffered
-fashion, completing the transmission of each `iolist` before
-requesting another one.  (In other words, applications should perform
-their own buffering).
+The ``MessageBody`` parameter is either an ``iolist`` or a "stream,"
+which is a lazy, recursive list-like structure.  A stream is a
+zero-arity function which returns either the empty tuple ``{}`` or a
+2-tuple of the form ``{Head, Tail}`` where ``Head`` is an ``iolist``
+and ``Tail`` is another stream.  Servers may choose to transmit
+message bodies represented by a stream using the chunked transfer
+encoding.  However, the server or gateway must transmit ``iolist``s to
+the client in an unbuffered fashion, completing the transmission of
+each ``iolist`` before requesting another one.  (In other words,
+applications should perform their own buffering).
 
-The server or gateway should not alter the `iolist` returned by the
+The server or gateway should not alter the ``iolist`` returned by the
 application in any way.  The application is responsible for ensuring
-that the `iolist` to be written is in a format suitable for the
+that the ``iolist`` to be written is in a format suitable for the
 client.  However, the server or gateway may apply HTTP transfer
 encodings or perform other transformations for the purpose of
 implementing HTTP features such as byte-range transmission.
@@ -492,15 +493,15 @@ implementing HTTP features such as byte-range transmission.
 EWGI Reference Implementation
 =============================
 
-The EWGI reference implementation includes an API module `ewgi_api`
+The EWGI reference implementation includes an API module ``ewgi_api``
 which defines helper functions to access and modify the EWGI context,
 parse query strings, etc.  It also includes a module
-`ewgi_application` which contains convenience functions for dealing
+``ewgi_application`` which contains convenience functions for dealing
 with application functions as well as sample middleware components.
-An include file (`include/ewgi.hrl`) is also provided, which contains
-macros for standard HTTP status values and the convenience record
-definitions.  These may be used to help development of servers and
-applications, but should not be required.
+An include file (``include/ewgi.hrl``) is also provided, which
+contains macros for standard HTTP status values and the convenience
+record definitions.  These may be used to help development of servers
+and applications, but should not be required.
 
 Copyright
 =========
@@ -515,3 +516,12 @@ This document has been placed in the public domain.
 
 .. _Apache SSL environment variables:
     http://www.modssl.org/docs/2.8/ssl_reference.html#ToC25
+
+.. _RFC 2616, Section 6.1.1:
+    http://www.w3.org/Protocols/rfc2616/rfc2616-sec6.html#sec6.1.1
+
+.. _RFC 931:
+    http://www.faqs.org/rfcs/rfc931.html
+
+.. _RFC 2616, Section 4.2:
+    http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2
