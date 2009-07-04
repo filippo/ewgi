@@ -41,7 +41,7 @@ Advantages
 Reference implementations
 -------------------------
 
-  The current server reference implementations include:
+The current server reference implementations include:
 
 * `Mochiweb`_
 * `Yaws`_
