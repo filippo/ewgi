@@ -318,7 +318,7 @@ fold_header(_, Acc) ->
     Acc.
 
 get_ip({ok, {Ip, _Port}}) ->
-    Ip;
+    inet_parse:ntoa(Ip);
 get_ip(_) ->
     undefined.
 
