@@ -14,13 +14,65 @@ projects such as Ruby's `Rack`_ .
 This sample application simply responds with 200 OK and a
 ``text/plain`` entity body of ``Hello world!`` for all requests.
 
-::
+Cheers to `Geoff Cant`_ for writing this example.
 
- simple_app({ewgi_context, Request, _Response}) ->
-     ResponseHeaders = [{"Content-type", "text/plain"}],
-     Response = {ewgi_response, {200, "OK"}, ResponseHeaders,
-                 [<<"Hello world!">>], undefined},
-     {ewgi_context, Request, Response}.
+#. Grab the latest ewgi and `MochiWeb`_ source trees.
+
+   ::
+  
+    $ git clone git://github.com/skarab/ewgi.git
+    $ svn checkout http://mochiweb.googlecode.com/svn/trunk/ \
+      mochiweb-read-only
+
+#. Compile them.
+
+   ::
+  
+    $ (cd ewgi/ && make)
+    $ (cd mochiweb-read-only/ && make)
+
+#. Create a file called ``ewex_web.erl``
+
+   ::
+  
+    -module(ewex_web).
+    
+    -export([start/0,stop/0,
+             loop/1,simple_app/1]).
+    
+    start() ->
+        mochiweb_http:start([{name, ewex}, {loop, fun ?MODULE:loop/1},
+                             {ip, "127.0.0.1"}, {port, 8889}]).
+    
+    stop() ->
+        mochiweb_http:stop(ewex).
+    
+    loop(Req) ->
+        Mod = ewgi_mochiweb:new(fun ?MODULE:simple_app/1),
+        Mod:run(Req).
+   
+    simple_app({ewgi_context, Request, _Response}) ->
+        ResponseHeaders = [{"Content-type", "text/plain"}],
+        Response = {ewgi_response, {200, "OK"}, ResponseHeaders,
+                    [<<"Hello world!">>], undefined},
+        {ewgi_context, Request, Response}.
+
+#. Compile it
+
+   ::
+  
+   $ erlc ewex_web.erl
+
+#. Run
+
+   ::
+  
+    $ erl -pa ewgi/ebin/ -pa mochiweb-read-only/ebin/ -eval \
+    'ewex_web:start(), receive done -> done end.'
+
+#. Point your browser to ``http://127.0.0.1:8889/`` (type ``halt().``
+   in the Erlang shell when you want to stop)
+
 
 Middleware components
 ---------------------
@@ -57,3 +109,5 @@ The current server reference implementations include:
     http://yaws.hyber.org/
 .. _inets:
     http://erlang.org/doc/apps/inets/http_server.html
+.. _Geoff Cant:
+    http://github.com/archaelus/
