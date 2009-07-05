@@ -68,7 +68,6 @@
 
 %% 5xx: Server Error
 -define(INTERNAL_SERVER_ERROR,      {500, "Internal Server Error"}).
--define(ERROR,                      {500, "Internal Server Error"}). % alias for internal_server_error
 -define(NOT_IMPLEMENTED,            {501, "Not Implemented"}).
 -define(BAD_GW,                     {502, "Bad Gateway"}).
 -define(SERVICE_UNAVAILABLE,        {503, "Service Unavailable"}).
