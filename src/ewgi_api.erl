@@ -62,7 +62,7 @@
 
 %% Utility methods
 -export([parse_qs/1, parse_post/1, urlencode/1, quote/1, normalize_header/1,
-         unquote_path/1, path_components/3]).
+         unquote_path/1, path_components/3, urlsplit/1]).
 
 %%====================================================================
 %% API
@@ -747,3 +747,63 @@ t_insert_header(K, Pair, T) ->
 
 t_enter_header(K, Pair, T) ->
     gb_trees:enter(K, Pair, T).
+
+%% The following method (urlsplit/1) is taken from the MochiWeb
+%% project module mochiweb_util.
+%% Copyright 2007 MochiMedia, Inc.
+%% See LICENSE for more details.
+
+%% @spec urlsplit(Url) -> {Scheme, Netloc, Path, Query, Fragment}
+%% @doc Return a 5-tuple, does not expand % escapes. Only supports HTTP style
+%%      URLs.
+urlsplit(Url) ->
+    {Scheme, Url1} = urlsplit_scheme(Url),
+    {Netloc, Url2} = urlsplit_netloc(Url1),
+    {Path, Query, Fragment} = urlsplit_path(Url2),
+    {Scheme, Netloc, Path, Query, Fragment}.
+
+urlsplit_scheme(Url) ->
+    urlsplit_scheme(Url, []).
+
+urlsplit_scheme([], Acc) ->
+    {"", lists:reverse(Acc)};
+urlsplit_scheme(":" ++ Rest, Acc) ->
+    {string:to_lower(lists:reverse(Acc)), Rest};
+urlsplit_scheme([C | Rest], Acc) ->
+    urlsplit_scheme(Rest, [C | Acc]).
+
+urlsplit_netloc("//" ++ Rest) ->
+    urlsplit_netloc(Rest, []);
+urlsplit_netloc(Path) ->
+    {"", Path}.
+
+urlsplit_netloc(Rest=[C | _], Acc) when C =:= $/; C =:= $?; C =:= $# ->
+    {lists:reverse(Acc), Rest};
+urlsplit_netloc([C | Rest], Acc) ->
+    urlsplit_netloc(Rest, [C | Acc]).
+
+%% @spec urlsplit_path(Url) -> {Path, Query, Fragment}
+%% @doc Return a 3-tuple, does not expand % escapes. Only supports HTTP style
+%%      paths.
+urlsplit_path(Path) ->
+    urlsplit_path(Path, []).
+
+urlsplit_path("", Acc) ->
+    {lists:reverse(Acc), "", ""};
+urlsplit_path("?" ++ Rest, Acc) ->
+    {Query, Fragment} = urlsplit_query(Rest),
+    {lists:reverse(Acc), Query, Fragment};
+urlsplit_path("#" ++ Rest, Acc) ->
+    {lists:reverse(Acc), "", Rest};
+urlsplit_path([C | Rest], Acc) ->
+    urlsplit_path(Rest, [C | Acc]).
+
+urlsplit_query(Query) ->
+    urlsplit_query(Query, []).
+
+urlsplit_query("", Acc) ->
+    {lists:reverse(Acc), ""};
+urlsplit_query("#" ++ Rest, Acc) ->
+    {lists:reverse(Acc), Rest};
+urlsplit_query([C | Rest], Acc) ->
+    urlsplit_query(Rest, [C | Acc]).
