@@ -306,7 +306,6 @@ get_all_headers(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
     H = headers(Ctx),
     Other = gb_trees:to_list(?GET_HTTP_OTHER(H)),
     Acc = [{K, string:join(V, ", ")} || {K, {_, V}} <- [{K0, lists:unzip(V0)} || {K0, V0} <- Other, is_list(V0)]],
-    get_header_value("accept", Ctx),
     [{"accept", get_header_value("accept", Ctx)},
      {"cookie", get_header_value("cookie", Ctx)},
      {"host", get_header_value("host", Ctx)},
