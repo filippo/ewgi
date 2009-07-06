@@ -232,7 +232,8 @@ handle_result(#mod{config_db=Db}=A, Ctx) ->
         Body when is_function(Body, 0) ->
             ChunkedAllowed = not httpd_response:is_disable_chunked_send(Db),
             handle_result_wrap_stream(A, ChunkedAllowed, Code, Headers, Body);
-        Body ->
+        Body0 ->
+            Body = [Body0],
 	    Length = {content_length, integer_to_list(erlang:iolist_size(Body))},
             {proceed, [{response, {response, [{code, Code}, Length] ++ Headers, Body}}]}
     end.
