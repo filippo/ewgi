@@ -307,12 +307,13 @@ get_all_headers(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
     H = headers(Ctx),
     Other = gb_trees:to_list(?GET_HTTP_OTHER(H)),
     Acc = [{K, string:join(V, ", ")} || {K, {_, V}} <- [{K0, lists:unzip(V0)} || {K0, V0} <- Other, is_list(V0)]],
-    [{"accept", get_header_value("accept", Ctx)},
-     {"cookie", get_header_value("cookie", Ctx)},
-     {"host", get_header_value("host", Ctx)},
-     {"if-modified-since", get_header_value("if-modified-since", Ctx)},
-     {"user-agent", get_header_value("user-agent", Ctx)},
-     {"x-http-method-override", get_header_value("x-http-method-override", Ctx)}|Acc].
+    L = [{"accept", get_header_value("accept", Ctx)},
+         {"cookie", get_header_value("cookie", Ctx)},
+         {"host", get_header_value("host", Ctx)},
+         {"if-modified-since", get_header_value("if-modified-since", Ctx)},
+         {"user-agent", get_header_value("user-agent", Ctx)},
+         {"x-http-method-override", get_header_value("x-http-method-override", Ctx)}|Acc],
+    lists:filter(fun({_, undefined}) -> false; (_) -> true end, L).
 
 -spec ewgi_spec(ewgi_context()) -> ewgi_spec().
 ewgi_spec(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
