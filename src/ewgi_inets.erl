@@ -145,9 +145,9 @@ parse_element(_, _) ->
 
 parse_ewgi_element(read_input, #mod{entity_body=Buf}) ->
     F = fun(Callback, Length) when is_integer(Length) -> % No chunk size specified, so use default
-                read_input(Callback, {Length, ?DEFAULT_CHUNKSIZE}, Buf);
+                read_input(Callback, {Length, ?DEFAULT_CHUNKSIZE}, list_to_binary(Buf));
            (Callback, {Length, ChunkSz}) ->
-                read_input(Callback, {Length, ChunkSz}, Buf)
+                read_input(Callback, {Length, ChunkSz}, list_to_binary(Buf))
         end,
     F;
 
@@ -353,7 +353,7 @@ read_input(Callback, {Length, _ChunkSz}, _Left) when is_function(Callback), Leng
     Callback(eof);
 
 %% Continue reading and calling back with each chunk of data
-read_input(Callback, {Length, ChunkSz}, Left) when is_function(Callback) ->
+read_input(Callback, {Length, ChunkSz}, Left) when is_function(Callback), is_binary(Left) ->
     L = recv_size(Length, ChunkSz),
     <<Bin:L/bytes,Rest/bits>> = Left,
     Rem = Length - size(Bin),
