@@ -8,8 +8,8 @@ providing a common mechanism for reusing components.  It was inspired
 by Python's `PEP 333`_ and provides similar functionality to other
 projects such as Ruby's `Rack`_ .
 
-"Hello world!" example
-----------------------
+"Hello world!" MochiWeb example
+-------------------------------
 
 This sample application simply responds with 200 OK and a
 ``text/plain`` entity body of ``Hello world!`` for all requests.
@@ -72,6 +72,22 @@ Cheers to `Geoff Cant`_ for writing this example.
 
 #. Point your browser to ``http://127.0.0.1:8889/`` (type ``halt().``
    in the Erlang shell when you want to stop)
+
+
+The even shorter inets example
+------------------------------
+
+   ::
+  
+    $ git clone git://github.com/skarab/ewgi.git && (cd ewgi/ && make \
+      && erl -pa ebin/ -eval 'application:start(inets)' \
+      -eval 'application:set_env(ewgi, app_module, ewgi_test)' \
+      -eval 'application:set_env(ewgi, app_function, testapp)' \
+      -eval 'inets:start(httpd, [{port, 8889},
+                                 {server_name, "ewgi"},
+                                 {server_root, "."},
+                                 {document_root, "."},
+                                 {modules, [ewgi_inets]}])')
 
 
 Middleware components
