@@ -69,14 +69,15 @@
 %%====================================================================
 -spec empty_request() -> ewgi_request().
 empty_request() ->
-    {'ewgi_request', undefined, undefined, undefined, undefined,
+    {'ewgi_request', undefined, undefined, undefined,
+     empty_ewgi_spec(), undefined, empty_http_headers(), undefined,
      undefined, undefined, undefined, undefined, undefined, undefined,
      undefined, undefined, undefined, undefined, undefined, undefined,
-     undefined, undefined, undefined, undefined}.
+     undefined}.
 
 -spec empty_response() -> ewgi_response().
 empty_response() ->
-    {'ewgi_response', undefined, undefined, undefined, undefined}.
+    {'ewgi_response', undefined, [], undefined, undefined}.
 
 -spec context(ewgi_request(), ewgi_response()) -> ewgi_context().
 context(Request, Response) when ?IS_EWGI_REQUEST(Request),
