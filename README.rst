@@ -77,18 +77,17 @@ Cheers to `Geoff Cant`_ for writing this example.
 The even shorter inets example
 ------------------------------
 
-   ::
-  
-    $ git clone git://github.com/skarab/ewgi.git && (cd ewgi/ && make \
-      && erl -pa ebin/ -eval 'application:start(inets)' \
-      -eval 'application:set_env(ewgi, app_module, ewgi_test)' \
-      -eval 'application:set_env(ewgi, app_function, testapp)' \
-      -eval 'inets:start(httpd, [{port, 8889},
-                                 {server_name, "ewgi"},
-                                 {server_root, "."},
-                                 {document_root, "."},
-                                 {modules, [ewgi_inets]}])')
+::
 
+ $ git clone git://github.com/skarab/ewgi.git && (cd ewgi/ && make \
+   && erl -pa ebin/ -eval 'application:start(inets)' \
+   -eval 'application:set_env(ewgi, app_module, ewgi_test)' \
+   -eval 'application:set_env(ewgi, app_function, testapp)' \
+   -eval 'inets:start(httpd, [{port, 8889},
+                              {server_name, "ewgi"},
+                              {server_root, "."},
+                              {document_root, "."},
+                              {modules, [ewgi_inets]}])')
 
 Middleware components
 ---------------------
