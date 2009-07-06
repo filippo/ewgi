@@ -38,10 +38,10 @@
 %%====================================================================
 run(Arg) ->
     try parse_arg(Arg) of
-        Req when is_record(Req, ewgi_request) ->
+        Req when ?IS_EWGI_REQUEST(Req) ->
             Ctx0 = ewgi_api:context(Req, ewgi_api:empty_response()),
             try Appl(Ctx0) of
-                Ctx when is_record(Ctx, ewgi_context) ->
+                Ctx when ?IS_EWGI_CONTEXT(Ctx) ->
                     handle_result(Ctx)
             catch
                 _:Reason ->

@@ -35,7 +35,7 @@
 
 %% @spec run(Application::ewgi_app(), Context::ewgi_context()) -> Context1::ewgi_context()
 %% @doc Runs an EWGI application with Context and returns the new Context1.
--spec run(ewgi_app(), #ewgi_context{}) -> #ewgi_context{}.
+-spec run(ewgi_app(), ewgi_context()) -> ewgi_context().
 run(Application, Context) when is_function(Application, 1) ->
     Application(Context).
 

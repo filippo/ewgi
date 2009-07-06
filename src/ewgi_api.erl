@@ -67,168 +67,170 @@
 %%====================================================================
 %% API
 %%====================================================================
--spec empty_request() -> #ewgi_request{}.
+-spec empty_request() -> ewgi_request().
 empty_request() ->
-    #ewgi_request{}.
+    {'ewgi_request', undefined, undefined, undefined, undefined,
+     undefined, undefined, undefined, undefined, undefined, undefined,
+     undefined, undefined, undefined, undefined, undefined, undefined,
+     undefined, undefined, undefined, undefined}.
 
--spec empty_response() -> #ewgi_response{}.
+-spec empty_response() -> ewgi_response().
 empty_response() ->
-    #ewgi_response{}.
+    {'ewgi_response', undefined, undefined, undefined, undefined}.
 
--spec context(#ewgi_request{}, #ewgi_response{}) -> #ewgi_context{}.
-context(Request, Response) when is_record(Request, ewgi_request),
-                                is_record(Response, ewgi_response) ->
-    #ewgi_context{request=Request, response=Response}.
+-spec context(ewgi_request(), ewgi_response()) -> ewgi_context().
+context(Request, Response) when ?IS_EWGI_REQUEST(Request),
+                                ?IS_EWGI_RESPONSE(Response) ->
+    {'ewgi_context', Request, Response}.
 
--spec request(#ewgi_request{}, #ewgi_context{}) -> #ewgi_context{}.
-request(Req, Ctx) when is_record(Req, ewgi_request),
-                       is_record(Ctx, ewgi_context) ->
-    Ctx#ewgi_context{request=Req}.
+-spec request(ewgi_request(), ewgi_context()) -> ewgi_context().
+request(Req, Ctx) when ?IS_EWGI_REQUEST(Req), ?IS_EWGI_CONTEXT(Ctx) ->
+    ?SET_EWGI_REQUEST(Req, Ctx).
 
--spec response(#ewgi_response{}, #ewgi_context{}) -> #ewgi_context{}.
-response(Rsp, Ctx) when is_record(Rsp, ewgi_response),
-                        is_record(Ctx, ewgi_context) ->
-    Ctx#ewgi_context{response=Rsp}.
+-spec response(ewgi_response(), ewgi_context()) -> ewgi_context().
+response(Rsp, Ctx) when ?IS_EWGI_RESPONSE(Rsp),
+                        ?IS_EWGI_CONTEXT(Ctx) ->
+    ?SET_EWGI_RESPONSE(Rsp, Ctx).
 
--spec response(#ewgi_context{}) -> #ewgi_response{}.
-response(#ewgi_context{response=R}) ->
-    R.
+-spec response(ewgi_context()) -> ewgi_response().
+response(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_EWGI_RESPONSE(Ctx).
 
--spec request(#ewgi_context{}) -> #ewgi_request{}.
-request(#ewgi_context{request=R}) ->
-    R.
+-spec request(ewgi_context()) -> ewgi_request().
+request(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_EWGI_REQUEST(Ctx).
 
--spec response_headers(#ewgi_context{}) -> ewgi_header_list().
-response_headers(#ewgi_context{response=#ewgi_response{headers=V}}) ->
-    V.
+-spec response_headers(ewgi_context()) -> ewgi_header_list().
+response_headers(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_RESPONSE_HEADERS(response(Ctx)).
 
--spec response_status(#ewgi_context{}) -> ewgi_status().
-response_status(#ewgi_context{response=#ewgi_response{status=V}}) ->
-    V.
+-spec response_status(ewgi_context()) -> ewgi_status().
+response_status(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_RESPONSE_STATUS(response(Ctx)).
 
--spec response_message_body(#ewgi_context{}) -> ewgi_message_body().
-response_message_body(#ewgi_context{response=#ewgi_response{message_body=V}}) ->
-    V.
+-spec response_message_body(ewgi_context()) -> ewgi_message_body().
+response_message_body(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_RESPONSE_MESSAGE_BODY(response(Ctx)).
 
--spec response_error(#ewgi_context{}) -> any().
-response_error(#ewgi_context{response=#ewgi_response{err=V}}) ->
-    V.
+-spec response_error(ewgi_context()) -> any().
+response_error(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_RESPONSE_ERROR(response(Ctx)).
 
--spec response_headers(ewgi_header_list(), #ewgi_context{}) -> #ewgi_context{}.
-response_headers(V, #ewgi_context{response=Rsp0}=Ctx0) ->
-    Rsp = Rsp0#ewgi_response{headers=V},
-    Ctx = Ctx0#ewgi_context{response=Rsp},
-    Ctx.
+-spec response_headers(ewgi_header_list(), ewgi_context()) -> ewgi_context().
+response_headers(V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    response(?SET_RESPONSE_HEADERS(V, response(Ctx)), Ctx).
 
--spec response_status(ewgi_status(), #ewgi_context{}) -> #ewgi_context{}.
-response_status(V, #ewgi_context{response=Rsp0}=Ctx0) ->
-    Rsp = Rsp0#ewgi_response{status=V},
-    Ctx = Ctx0#ewgi_context{response=Rsp},
-    Ctx.
+-spec response_status(ewgi_status(), ewgi_context()) -> ewgi_context().
+response_status(V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    response(?SET_RESPONSE_STATUS(V, response(Ctx)), Ctx).
 
--spec response_message_body(ewgi_message_body(), #ewgi_context{}) -> #ewgi_context{}.
-response_message_body(V, #ewgi_context{response=Rsp0}=Ctx0) ->
-    Rsp = Rsp0#ewgi_response{message_body=V},
-    Ctx = Ctx0#ewgi_context{response=Rsp},
-    Ctx.
+-spec response_message_body(ewgi_message_body(), ewgi_context()) -> ewgi_context().
+response_message_body(V,  Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    response(?SET_RESPONSE_MESSAGE_BODY(V, response(Ctx)), Ctx).
 
--spec response_error(any(), #ewgi_context{}) -> #ewgi_context{}.
-response_error(V, #ewgi_context{response=Rsp0}=Ctx0) ->
-    Rsp = Rsp0#ewgi_response{err=V},
-    Ctx = Ctx0#ewgi_context{response=Rsp},
-    Ctx.
+-spec response_error(any(), ewgi_context()) -> ewgi_context().
+response_error(V,  Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    response(?SET_RESPONSE_ERROR(V, response(Ctx)), Ctx).
 
--spec auth_type(#ewgi_context{}) -> ewgi_val().
-auth_type(#ewgi_context{request=#ewgi_request{auth_type=V}}) ->
-    V.
+-spec auth_type(ewgi_context()) -> ewgi_val().
+auth_type(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_AUTH_TYPE(request(Ctx)).
 
--spec content_length(#ewgi_context{}) -> non_neg_integer().
-content_length(#ewgi_context{request=#ewgi_request{content_length=V}}) ->
-    V.
+-spec content_length(ewgi_context()) -> non_neg_integer().
+content_length(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_CONTENT_LENGTH(request(Ctx)).
 
--spec content_type(#ewgi_context{}) -> ewgi_val().
-content_type(#ewgi_context{request=#ewgi_request{content_type=V}}) ->
-    V.
+-spec content_type(ewgi_context()) -> ewgi_val().
+content_type(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_CONTENT_TYPE(request(Ctx)).
 
--spec gateway_interface(#ewgi_context{}) -> ewgi_val().
-gateway_interface(#ewgi_context{request=#ewgi_request{gateway_interface=V}}) ->
-    V.
+-spec gateway_interface(ewgi_context()) -> ewgi_val().
+gateway_interface(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_GATEWAY_INTERFACE(request(Ctx)).
 
--spec path_info(#ewgi_context{}) -> ewgi_val().
-path_info(#ewgi_context{request=#ewgi_request{path_info=V}}) ->
-    V.
+-spec path_info(ewgi_context()) -> ewgi_val().
+path_info(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_PATH_INFO(request(Ctx)).
 
--spec path_translated(#ewgi_context{}) -> ewgi_val().
-path_translated(#ewgi_context{request=#ewgi_request{path_translated=V}}) ->
-    V.
+-spec path_translated(ewgi_context()) -> ewgi_val().
+path_translated(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_PATH_TRANSLATED(request(Ctx)).
 
--spec query_string(#ewgi_context{}) -> ewgi_val().
-query_string(#ewgi_context{request=#ewgi_request{query_string=V}}) ->
-    V.
+-spec query_string(ewgi_context()) -> ewgi_val().
+query_string(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_QUERY_STRING(request(Ctx)).
 
--spec remote_addr(#ewgi_context{}) -> ewgi_val().
-remote_addr(#ewgi_context{request=#ewgi_request{remote_addr=V}}) ->
-    V.
+-spec remote_addr(ewgi_context()) -> ewgi_val().
+remote_addr(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_REMOTE_ADDR(request(Ctx)).
 
--spec remote_host(#ewgi_context{}) -> ewgi_val().
-remote_host(#ewgi_context{request=#ewgi_request{remote_host=V}}) ->
-    V.
+-spec remote_host(ewgi_context()) -> ewgi_val().
+remote_host(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_REMOTE_HOST(request(Ctx)).
 
--spec remote_ident(#ewgi_context{}) -> ewgi_val().
-remote_ident(#ewgi_context{request=#ewgi_request{remote_ident=V}}) ->
-    V.
+-spec remote_ident(ewgi_context()) -> ewgi_val().
+remote_ident(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_REMOTE_IDENT(request(Ctx)).
 
--spec remote_user(#ewgi_context{}) -> ewgi_val().
-remote_user(#ewgi_context{request=#ewgi_request{remote_user=V}}) ->
-    V.
+-spec remote_user(ewgi_context()) -> ewgi_val().
+remote_user(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_REMOTE_USER(request(Ctx)).
 
--spec remote_user_data(#ewgi_context{}) -> ewgi_val().
-remote_user_data(#ewgi_context{request=#ewgi_request{remote_user_data=V}}) ->
-    V.
+-spec remote_user_data(ewgi_context()) -> ewgi_val().
+remote_user_data(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_REMOTE_USER_DATA(request(Ctx)).
 
--spec request_method(#ewgi_context{}) -> ewgi_request_method().
-request_method(#ewgi_context{request=#ewgi_request{request_method=V}}) ->
-    V.
+-spec request_method(ewgi_context()) -> ewgi_request_method().
+request_method(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_REQUEST_METHOD(request(Ctx)).
 
--spec script_name(#ewgi_context{}) -> ewgi_val().
-script_name(#ewgi_context{request=#ewgi_request{script_name=V}}) ->
-    V.
+-spec script_name(ewgi_context()) -> ewgi_val().
+script_name(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_SCRIPT_NAME(request(Ctx)).
 
--spec server_name(#ewgi_context{}) -> ewgi_val().
-server_name(#ewgi_context{request=#ewgi_request{server_name=V}}) ->
-    V.
+-spec server_name(ewgi_context()) -> ewgi_val().
+server_name(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_SERVER_NAME(request(Ctx)).
 
--spec server_port(#ewgi_context{}) -> ewgi_val().
-server_port(#ewgi_context{request=#ewgi_request{server_port=V}}) ->
-    V.
+-spec server_port(ewgi_context()) -> ewgi_val().
+server_port(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_SERVER_PORT(request(Ctx)).
 
--spec server_protocol(#ewgi_context{}) -> ewgi_val().
-server_protocol(#ewgi_context{request=#ewgi_request{server_protocol=V}}) ->
-    V.
+-spec server_protocol(ewgi_context()) -> ewgi_val().
+server_protocol(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_SERVER_PROTOCOL(request(Ctx)).
 
--spec server_software(#ewgi_context{}) -> ewgi_val().
-server_software(#ewgi_context{request=#ewgi_request{server_software=V}}) ->
-    V.
+-spec server_software(ewgi_context()) -> ewgi_val().
+server_software(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_SERVER_SOFTWARE(request(Ctx)).
 
--spec get_header_value(string(), #ewgi_context{}) -> ewgi_header_val().
-get_header_value(Hdr0, Ctx) when is_list(Hdr0) ->
+-spec headers(ewgi_context()) -> ewgi_http_headers().
+headers(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_HTTP_HEADERS(request(Ctx)).
+
+-spec headers(ewgi_http_headers(), ewgi_context()) -> ewgi_context().
+headers(H, Ctx) when ?IS_HTTP_HEADERS(H), ?IS_EWGI_CONTEXT(Ctx) ->
+    request(?SET_HTTP_HEADERS(H, headers(Ctx)), Ctx).
+
+-spec get_header_value(string(), ewgi_context()) -> ewgi_header_val().
+get_header_value(Hdr0, Ctx) when is_list(Hdr0), ?IS_EWGI_CONTEXT(Ctx) ->
     Hdr = string:to_lower(Hdr0),
     get_header1(Hdr, Ctx).
 
-get_header1("accept", #ewgi_context{request=#ewgi_request{http_headers=#ewgi_http_headers{http_accept=V}}}) ->
-    V;
-get_header1("cookie", #ewgi_context{request=#ewgi_request{http_headers=#ewgi_http_headers{http_cookie=V}}}) ->
-    V;
-get_header1("host", #ewgi_context{request=#ewgi_request{http_headers=#ewgi_http_headers{http_host=V}}}) ->
-    V;
-get_header1("if-modified-since", #ewgi_context{request=#ewgi_request{http_headers=#ewgi_http_headers{http_if_modified_since=V}}}) ->
-    V;
-get_header1("user-agent", #ewgi_context{request=#ewgi_request{http_headers=#ewgi_http_headers{http_user_agent=V}}}) ->
-    V;
-get_header1("x-http-method-override", #ewgi_context{request=#ewgi_request{http_headers=#ewgi_http_headers{http_x_http_method_override=V}}}) ->
-    V;
-get_header1(Hdr, #ewgi_context{request=#ewgi_request{http_headers=#ewgi_http_headers{other=D}}}) ->
-    case gb_trees:lookup(Hdr, D) of
+get_header1("accept", Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_HTTP_ACCEPT(headers(Ctx));
+get_header1("cookie",  Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_HTTP_COOKIE(headers(Ctx));
+get_header1("host", Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_HTTP_HOST(headers(Ctx));
+get_header1("if-modified-since", Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_HTTP_IF_MODIFIED_SINCE(headers(Ctx));
+get_header1("user-agent", Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_HTTP_USER_AGENT(headers(Ctx));
+get_header1("x-http-method-override", Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_HTTP_X_HTTP_METHOD_OVERRIDE(headers(Ctx));
+get_header1(Hdr, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    case gb_trees:lookup(Hdr, ?GET_HTTP_OTHER(headers(Ctx))) of
         {value, V} when is_list(V) ->
             {_, V1} = lists:unzip(V),
             string:join(V1, ", ");
@@ -236,127 +238,110 @@ get_header1(Hdr, #ewgi_context{request=#ewgi_request{http_headers=#ewgi_http_hea
             undefined
     end.
 
-insert_header(K0, V, #ewgi_context{request=#ewgi_request{http_headers=#ewgi_http_headers{other=D0}=H0}=R0}=Ctx0) ->
+insert_header(K0, V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
     K = string:to_lower(K0),
-    D = t_insert_header(K, {K0, V}, D0),
-    H = H0#ewgi_http_headers{other=D},
-    R = R0#ewgi_request{http_headers=H},
-    Ctx = Ctx0#ewgi_context{request=R},
-    Ctx.
+    D = t_insert_header(K, {K0, V}, headers(Ctx)),
+    headers(D, Ctx).
 
-set_header(K0, V, #ewgi_context{request=#ewgi_request{http_headers=#ewgi_http_headers{other=D0}=H0}=R0}=Ctx0) ->
+set_header(K0, V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
     K = string:to_lower(K0),
-    D = t_enter_header(K, {K0, V}, D0),
-    H = H0#ewgi_http_headers{other=D},
-    R = R0#ewgi_request{http_headers=H},
-    Ctx = Ctx0#ewgi_context{request=R},
-    Ctx.
+    D = t_enter_header(K, {K0, V}, headers(Ctx)),
+    headers(D, Ctx).
 
-auth_type(V, #ewgi_context{request=Req0}=Ctx0) ->
-    Req = Req0#ewgi_request{auth_type=V},
-    Ctx0#ewgi_context{request=Req}.
+auth_type(V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    request(?SET_AUTH_TYPE(V, request(Ctx)), Ctx).
 
-content_length(V, #ewgi_context{request=Req0}=Ctx0) ->
-    Req = Req0#ewgi_request{content_length=V},
-    Ctx0#ewgi_context{request=Req}.
+content_length(V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    request(?SET_CONTENT_LENGTH(V, request(Ctx)), Ctx).
 
-content_type(V, #ewgi_context{request=Req0}=Ctx0) ->
-    Req = Req0#ewgi_request{content_type=V},
-    Ctx0#ewgi_context{request=Req}.
+content_type(V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    request(?SET_CONTENT_TYPE(V, request(Ctx)), Ctx).
 
-gateway_interface(V, #ewgi_context{request=Req0}=Ctx0) ->
-    Req = Req0#ewgi_request{gateway_interface=V},
-    Ctx0#ewgi_context{request=Req}.
+gateway_interface(V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    request(?SET_GATEWAY_INTERFACE(V, request(Ctx)), Ctx).
 
-path_info(V, #ewgi_context{request=Req0}=Ctx0) ->
-    Req = Req0#ewgi_request{path_info=V},
-    Ctx0#ewgi_context{request=Req}.
+path_info(V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    request(?SET_PATH_INFO(V, request(Ctx)), Ctx).
 
-path_translated(V, #ewgi_context{request=Req0}=Ctx0) ->
-    Req = Req0#ewgi_request{path_translated=V},
-    Ctx0#ewgi_context{request=Req}.
+path_translated(V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    request(?SET_PATH_TRANSLATED(V, request(Ctx)), Ctx).
 
-query_string(V, #ewgi_context{request=Req0}=Ctx0) ->
-    Req = Req0#ewgi_request{query_string=V},
-    Ctx0#ewgi_context{request=Req}.
+query_string(V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    request(?SET_QUERY_STRING(V, request(Ctx)), Ctx).
 
-remote_addr(V, #ewgi_context{request=Req0}=Ctx0) ->
-    Req = Req0#ewgi_request{remote_addr=V},
-    Ctx0#ewgi_context{request=Req}.
+remote_addr(V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    request(?SET_REMOTE_ADDR(V, request(Ctx)), Ctx).
 
-remote_host(V, #ewgi_context{request=Req0}=Ctx0) ->
-    Req = Req0#ewgi_request{remote_host=V},
-    Ctx0#ewgi_context{request=Req}.
+remote_host(V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    request(?SET_REMOTE_HOST(V, request(Ctx)), Ctx).
 
-remote_ident(V, #ewgi_context{request=Req0}=Ctx0) ->
-    Req = Req0#ewgi_request{remote_ident=V},
-    Ctx0#ewgi_context{request=Req}.
+remote_ident(V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    request(?SET_REMOTE_IDENT(V, request(Ctx)), Ctx).
 
-remote_user(V, #ewgi_context{request=Req0}=Ctx0) ->
-    Req = Req0#ewgi_request{remote_user=V},
-    Ctx0#ewgi_context{request=Req}.
+remote_user(V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    request(?SET_REMOTE_USER(V, request(Ctx)), Ctx).
 
-remote_user_data(V, #ewgi_context{request=Req0}=Ctx0) ->
-    Req = Req0#ewgi_request{remote_user_data=V},
-    Ctx0#ewgi_context{request=Req}.
+remote_user_data(V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    request(?SET_REMOTE_USER_DATA(V, request(Ctx)), Ctx).
 
-request_method(V, #ewgi_context{request=Req0}=Ctx0) ->
-    Req = Req0#ewgi_request{request_method=V},
-    Ctx0#ewgi_context{request=Req}.
+request_method(V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    request(?SET_REQUEST_METHOD(V, request(Ctx)), Ctx).
 
-script_name(V, #ewgi_context{request=Req0}=Ctx0) ->
-    Req = Req0#ewgi_request{script_name=V},
-    Ctx0#ewgi_context{request=Req}.
+script_name(V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    request(?SET_SCRIPT_NAME(V, request(Ctx)), Ctx).
 
-server_name(V, #ewgi_context{request=Req0}=Ctx0) ->
-    Req = Req0#ewgi_request{server_name=V},
-    Ctx0#ewgi_context{request=Req}.
+server_name(V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    request(?SET_SERVER_NAME(V, request(Ctx)), Ctx).
 
-server_port(V, #ewgi_context{request=Req0}=Ctx0) ->
-    Req = Req0#ewgi_request{server_port=V},
-    Ctx0#ewgi_context{request=Req}.
+server_port(V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    request(?SET_SERVER_PORT(V, request(Ctx)), Ctx).
 
-server_protocol(V, #ewgi_context{request=Req0}=Ctx0) ->
-    Req = Req0#ewgi_request{server_protocol=V},
-    Ctx0#ewgi_context{request=Req}.
+server_protocol(V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    request(?SET_SERVER_PROTOCOL(V, request(Ctx)), Ctx).
 
-server_software(V, #ewgi_context{request=Req0}=Ctx0) ->
-    Req = Req0#ewgi_request{server_software=V},
-    Ctx0#ewgi_context{request=Req}.
+server_software(V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    request(?SET_SERVER_SOFTWARE(V, request(Ctx)), Ctx).
 
-get_all_headers(#ewgi_context{request=#ewgi_request{http_headers=#ewgi_http_headers{other=HDict}=H}}) ->
-    F = fun({K, L}, Acc0) ->
-                lists:foldl(fun (V, Acc) -> [{K, V}|Acc] end, Acc0, L)
-        end,
-    Acc = lists:foldl(F, [], gb_trees:to_list(HDict)),
-    [{"accept", H#ewgi_http_headers.http_accept},
-     {"cookie", H#ewgi_http_headers.http_cookie},
-     {"host", H#ewgi_http_headers.http_host},
-     {"if-modified-since", H#ewgi_http_headers.http_if_modified_since},
-     {"user-agent", H#ewgi_http_headers.http_user_agent},
-     {"x-http-method-override", H#ewgi_http_headers.http_x_http_method_override}|Acc].
+get_all_headers(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    H = headers(Ctx),
+    Other = gb_trees:to_list(?GET_HTTP_OTHER(H)),
+    Acc = [{K, string:join(V, ", ")} || {K, {_, V}} <- [{K0, lists:unzip(V0)} || {K0, V0} <- Other, is_list(V0)]],
+    get_header_value("accept", Ctx),
+    [{"accept", get_header_value("accept", Ctx)},
+     {"cookie", get_header_value("cookie", Ctx)},
+     {"host", get_header_value("host", Ctx)},
+     {"if-modified-since", get_header_value("if-modified-since", Ctx)},
+     {"user-agent", get_header_value("user-agent", Ctx)},
+     {"x-http-method-override", get_header_value("x-http-method-override", Ctx)}|Acc].
 
--spec read_input(#ewgi_context{}) -> ewgi_ri_callback() | 'undefined'.
-read_input(#ewgi_context{request=#ewgi_request{ewgi=#ewgi_spec{read_input=F}}}) ->
-    F.
+-spec ewgi_spec(ewgi_context()) -> ewgi_spec().
+ewgi_spec(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_EWGI(request(Ctx)).
 
--spec read_input(ewgi_ri_callback(), non_neg_integer(), #ewgi_context{}) -> ewgi_ri_callback() | 'undefined'.
-read_input(Callback, Length, #ewgi_context{request=#ewgi_request{ewgi=#ewgi_spec{read_input=undefined}}})
-  when is_function(Callback, 1),
-       is_integer(Length),
-       Length >= 0 ->
-    undefined;
-read_input(Callback, Length, #ewgi_context{request=#ewgi_request{ewgi=#ewgi_spec{read_input=F}}})
-  when is_function(F, 2),
-       is_function(Callback, 1),
-       is_integer(Length),
-       Length >= 0 ->
-    F(Callback, Length).
+-spec ewgi_spec(ewgi_spec(), ewgi_context()) -> ewgi_context().
+ewgi_spec(E, Ctx) when ?IS_EWGI_SPEC(E), ?IS_EWGI_CONTEXT(Ctx) ->
+    request(?SET_EWGI(E, request(Ctx)), Ctx).
+
+-spec read_input(ewgi_context()) -> ewgi_ri_callback() | 'undefined'.
+read_input(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_EWGI_READ_INPUT(ewgi_spec(Ctx)).
+
+-spec read_input(ewgi_ri_callback(), non_neg_integer(), ewgi_context()) -> ewgi_ri_callback() | 'undefined'.
+read_input(Callback, Length, Ctx) when ?IS_EWGI_CONTEXT(Ctx),
+                                       is_function(Callback, 1),
+                                       is_integer(Length),
+                                       Length >= 0 ->
+    case read_input(Ctx) of
+        F when is_function(F, 2) ->
+            F(Callback, Length);
+        undefined ->
+            undefined
+    end.
 
 %% @spec read_input_string(non_neg_integer(), ewgi_context()) -> string() | {error, no_input}
 %% @doc Reads the client message body into a string from the EWGI context.
--spec read_input_string(non_neg_integer(), #ewgi_context{}) -> [byte()] | {'error', 'no_input'}.
-read_input_string(L, Ctx) when is_integer(L), L >= 0 ->
+-spec read_input_string(non_neg_integer(), ewgi_context()) -> [byte()] | {'error', 'no_input'}.
+read_input_string(L, Ctx) when is_integer(L), L >= 0, ?IS_EWGI_CONTEXT(Ctx) ->
     case read_input(read_input_string_cb([]), L, Ctx) of
         undefined ->
             {error, no_input};
@@ -374,32 +359,33 @@ read_input_string_cb(Acc) ->
         end,
     F.
 
-write_error(Msg, #ewgi_context{request=#ewgi_request{ewgi=#ewgi_spec{write_error=F}}}) ->
+write_error(Msg, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    F = ?GET_EWGI_WRITE_ERROR(ewgi_spec(Ctx)),
     F(Msg).
 
-url_scheme(#ewgi_context{request=#ewgi_request{ewgi=#ewgi_spec{url_scheme=V}}}) ->
-    V.
+url_scheme(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_EWGI_URL_SCHEME(ewgi_spec(Ctx)).
 
-version(#ewgi_context{request=#ewgi_request{ewgi=#ewgi_spec{version=V}}}) ->
-    V.
+version(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_EWGI_VERSION(ewgi_spec(Ctx)).
 
-get_all_data(#ewgi_context{request=#ewgi_request{ewgi=#ewgi_spec{data=D}}}) ->
-    D.
+get_all_data(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    ?GET_EWGI_DATA(ewgi_spec(Ctx)).
 
 find_data(Key, Ctx) ->
     find_data(Key, Ctx, undefined).
 
-find_data(Key, #ewgi_context{request=#ewgi_request{ewgi=#ewgi_spec{data=D}}}, Default) ->
-    case gb_trees:lookup(Key, D) of
+find_data(Key, Ctx, Default) when ?IS_EWGI_CONTEXT(Ctx) ->
+    case gb_trees:lookup(Key, get_all_data(Ctx)) of
         {value, V} ->
             V;
         none ->
             Default
     end.
 
-store_data(Key, Val, #ewgi_context{request=#ewgi_request{ewgi=#ewgi_spec{data=D0}=E}=Req}=Ctx) ->
-    D = gb_trees:enter(Key, Val, D0),
-    Ctx#ewgi_context{request=Req#ewgi_request{ewgi=E#ewgi_spec{data=D}}}.
+store_data(Key, Val, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    D = gb_trees:enter(Key, Val, get_all_data(Ctx)),
+    ewgi_spec(?SET_EWGI_DATA(D, ewgi_spec(Ctx)), Ctx).
 
 %%--------------------------------------------------------------------
 %% @spec parse_qs(string()|binary()) -> [proplist()]
@@ -675,54 +661,58 @@ path_components("%2F" ++ Rest, Piece, Acc) ->
 path_components([C|Rest], Piece, Acc) ->
     path_components(Rest, [C|Piece], Acc).
 
-%% These two macros make dealing with the request records simpler
--define(EWGI_RECSET(R, K), fun(Rec, V) -> Rec#R{K=V} end).
--define(EWGI_FIELD_PAIR(R, K), {K, ?EWGI_RECSET(R, K)}).
+-define(EWGI_SPEC_FIELDS, [{read_input, fun(E, V) -> ?SET_EWGI_READ_INPUT(V, E) end},
+                           {write_error, fun(E, V) -> ?SET_EWGI_WRITE_ERROR(V, E) end},
+                           {url_scheme, fun(E, V) -> ?SET_EWGI_URL_SCHEME(V, E) end},
+                           {version, fun(E, V) -> ?SET_EWGI_VERSION(V, E) end},
+                           {data, fun(E, V) -> ?SET_EWGI_DATA(V, E) end}]).
 
--define(EWGI_SPEC_FIELDS, [?EWGI_FIELD_PAIR(ewgi_spec, read_input),
-                           ?EWGI_FIELD_PAIR(ewgi_spec, write_error),
-                           ?EWGI_FIELD_PAIR(ewgi_spec, url_scheme),
-                           ?EWGI_FIELD_PAIR(ewgi_spec, version),
-                           ?EWGI_FIELD_PAIR(ewgi_spec, data)]).
+-define(EWGI_HTTP_HEADER_FIELDS, [{http_accept, fun(E, V) -> ?SET_HTTP_ACCEPT(V, E) end},
+                                  {http_cookie, fun(E, V) -> ?SET_HTTP_COOKIE(V, E) end},
+                                  {http_host, fun(E, V) -> ?SET_HTTP_HOST(V, E) end},
+                                  {http_if_modified_since, fun(E, V) -> ?SET_HTTP_IF_MODIFIED_SINCE(V, E) end},
+                                  {http_user_agent, fun(E, V) -> ?SET_HTTP_USER_AGENT(V, E) end},
+                                  {http_x_http_method_override, fun(E, V) -> ?SET_HTTP_X_HTTP_METHOD_OVERRIDE(V, E) end},
+                                  {other, fun(E, V) -> ?SET_HTTP_OTHER(V, E) end}]).
 
--define(EWGI_HTTP_HEADER_FIELDS, [?EWGI_FIELD_PAIR(ewgi_http_headers, http_accept),
-                                  ?EWGI_FIELD_PAIR(ewgi_http_headers, http_cookie),
-                                  ?EWGI_FIELD_PAIR(ewgi_http_headers, http_host),
-                                  ?EWGI_FIELD_PAIR(ewgi_http_headers, http_if_modified_since),
-                                  ?EWGI_FIELD_PAIR(ewgi_http_headers, http_user_agent),
-                                  ?EWGI_FIELD_PAIR(ewgi_http_headers, http_x_http_method_override),
-                                  ?EWGI_FIELD_PAIR(ewgi_http_headers, other)]).
+-define(EWGI_REQUEST_FIELDS, [{auth_type, fun(E, V) -> ?SET_AUTH_TYPE(V, E) end},
+                              {content_length, fun(E, V) -> ?SET_CONTENT_LENGTH(V, E) end},
+                              {content_type, fun(E, V) -> ?SET_CONTENT_TYPE(V, E) end},
+                              {ewgi, fun(E, V) -> ?SET_EWGI(V, E) end},
+                              {gateway_interface, fun(E, V) -> ?SET_GATEWAY_INTERFACE(V, E) end},
+                              {http_headers, fun(E, V) -> ?SET_HTTP_HEADERS(V, E) end},
+                              {path_info, fun(E, V) -> ?SET_PATH_INFO(V, E) end},
+                              {path_translated, fun(E, V) -> ?SET_PATH_TRANSLATED(V, E) end},
+                              {query_string, fun(E, V) -> ?SET_QUERY_STRING(V, E) end},
+                              {remote_addr, fun(E, V) -> ?SET_REMOTE_ADDR(V, E) end},
+                              {remote_host, fun(E, V) -> ?SET_REMOTE_HOST(V, E) end},
+                              {remote_ident, fun(E, V) -> ?SET_REMOTE_IDENT(V, E) end},
+                              {remote_user, fun(E, V) -> ?SET_REMOTE_USER(V, E) end},
+                              {remote_user_data, fun(E, V) -> ?SET_REMOTE_USER_DATA(V, E) end},
+                              {request_method, fun(E, V) -> ?SET_REQUEST_METHOD(V, E) end},
+                              {script_name, fun(E, V) -> ?SET_SCRIPT_NAME(V, E) end},
+                              {server_name, fun(E, V) -> ?SET_SERVER_NAME(V, E) end},
+                              {server_port, fun(E, V) -> ?SET_SERVER_PORT(V, E) end},
+                              {server_protocol, fun(E, V) -> ?SET_SERVER_PROTOCOL(V, E) end},
+                              {server_software, fun(E, V) -> ?SET_SERVER_SOFTWARE(V, E) end}]).
 
--define(EWGI_REQUEST_FIELDS, [?EWGI_FIELD_PAIR(ewgi_request, auth_type),
-                              ?EWGI_FIELD_PAIR(ewgi_request, content_length),
-                              ?EWGI_FIELD_PAIR(ewgi_request, content_type),
-                              ?EWGI_FIELD_PAIR(ewgi_request, ewgi),
-                              ?EWGI_FIELD_PAIR(ewgi_request, gateway_interface),
-                              ?EWGI_FIELD_PAIR(ewgi_request, http_headers),
-                              ?EWGI_FIELD_PAIR(ewgi_request, path_info),
-                              ?EWGI_FIELD_PAIR(ewgi_request, path_translated),
-                              ?EWGI_FIELD_PAIR(ewgi_request, query_string),
-                              ?EWGI_FIELD_PAIR(ewgi_request, remote_addr),
-                              ?EWGI_FIELD_PAIR(ewgi_request, remote_host),
-                              ?EWGI_FIELD_PAIR(ewgi_request, remote_ident),
-                              ?EWGI_FIELD_PAIR(ewgi_request, remote_user),
-                              ?EWGI_FIELD_PAIR(ewgi_request, remote_user_data),
-                              ?EWGI_FIELD_PAIR(ewgi_request, request_method),
-                              ?EWGI_FIELD_PAIR(ewgi_request, script_name),
-                              ?EWGI_FIELD_PAIR(ewgi_request, server_name),
-                              ?EWGI_FIELD_PAIR(ewgi_request, server_port),
-                              ?EWGI_FIELD_PAIR(ewgi_request, server_protocol),
-                              ?EWGI_FIELD_PAIR(ewgi_request, server_software)]).
+empty_ewgi_spec() ->
+    {'ewgi_spec', undefined, undefined, undefined, undefined,
+     gb_trees:empty()}.
+
+empty_http_headers() ->
+    {'ewgi_http_headers', undefined, undefined, undefined, undefined,
+     undefined, undefined, gb_trees:empty()}.
 
 server_request_foldl(Req0, ParseFun0, ParseEwgiFun, ParseHttpFun) ->
     ParseFun = fun(ewgi, Req) ->
-                       request_foldl(Req, ParseEwgiFun, #ewgi_spec{}, ?EWGI_SPEC_FIELDS);
+                       request_foldl(Req, ParseEwgiFun, empty_ewgi_spec(), ?EWGI_SPEC_FIELDS);
                   (http_headers, Req) ->
-                       request_foldl(Req, ParseHttpFun, #ewgi_http_headers{}, ?EWGI_HTTP_HEADER_FIELDS);
+                       request_foldl(Req, ParseHttpFun, empty_http_headers(), ?EWGI_HTTP_HEADER_FIELDS);
                   (Field, Req) ->
                        ParseFun0(Field, Req)
                end,
-    request_foldl(Req0, ParseFun, #ewgi_request{}, ?EWGI_REQUEST_FIELDS).
+    request_foldl(Req0, ParseFun, empty_request(), ?EWGI_REQUEST_FIELDS).
 
 request_foldl(Req, ParseFun, EmptyRec, Fields) ->
     lists:foldl(fun({Field, F}, Rec) ->

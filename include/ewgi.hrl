@@ -20,77 +20,18 @@
 % Contributor(s): Filippo Pacini <filippo.pacini@gmail.com>
 %                 Hunter Morris <huntermorris@gmail.com>
 
-%%
-%% HTTP status codes
-%%
-%% 1xx: Informational
--define(CONTINUE,     {100, "Continue"}).
--define(SWITCH_PROTO, {101, "Switching Protocols"}).
-
-%% 2xx: Success
--define(OK,                {200, "OK"}).
--define(CREATED,           {201, "Created"}).
--define(ACCEPTED,          {202, "Accepted"}).
--define(NON_AUTHORITATIVE, {203, "Non-Authoritative Information"}).
--define(NO_CONTENT,        {204, "No Content"}).
--define(RESET,             {205, "Reset Content"}).
--define(PARTIAL,           {206, "Partial Content"}).
-
-%% 3xx: Redirection
--define(MULTIPLE_CHOICES, {300, "Multiple Choices"}).
--define(MOVED,            {301, "Moved Permanently"}).
--define(FOUND,            {302, "Found"}).
--define(SEE_OTHER,        {303, "See Other"}).
--define(REDIRECT,         {303, "See Other"}). % alias for see_other
--define(NOT_MODIFIED,     {304, "Not Modified"}).
--define(USE_PROXY,        {305, "Use Proxy"}).
--define(TEMPORARY,        {307, "Temporary Redirect"}).
-
-%% 4xx: Client Error
--define(BAD_REQ,                   {400, "Bad Request"}).
--define(UNAUTH,                    {401, "Unauthorized"}).
--define(PAYMENT_REQUIRED,          {402, "Payment Required"}).
--define(FORBIDDEN,                 {403, "Forbidden"}).
--define(NOT_FOUND,                 {404, "Not Found"}).
--define(METHOD_NOT_ALLOWED,        {405, "Method Not Allowed"}).
--define(NOT_ACCEPTABLE,            {406, "Not Acceptable"}).
--define(PROXY_AUTH_REQUIRED,       {407, "Proxy Authentication Required"}).
--define(REQ_TIMEOUT,               {408, "Request Time-out"}).
--define(CONFLICT,                  {409, "Conflict"}).
--define(GONE,                      {410, "Gone"}).
--define(LENGTH_REQUIRED,           {411, "Length Required"}).
--define(PRECONDITION_FAILED,       {412, "Precondition Failed"}).
--define(REQ_ENTITY_TOO_LARGE,      {413, "Request Entity Too Large"}).
--define(REQ_URI_TOO_LARGE,         {414, "Request-URI Too Large"}).
--define(UNSUPPORTED_MEDIA_TYPE,    {415, "Unsupported Media Type"}).
--define(REQ_RANGE_NOT_SATISFIABLE, {416, "Requested range not satisfiable"}).
--define(EXPECTATION_FAILED,        {417, "Expectation Failed"}).
-
-%% 5xx: Server Error
--define(INTERNAL_SERVER_ERROR,      {500, "Internal Server Error"}).
--define(NOT_IMPLEMENTED,            {501, "Not Implemented"}).
--define(BAD_GW,                     {502, "Bad Gateway"}).
--define(SERVICE_UNAVAILABLE,        {503, "Service Unavailable"}).
--define(GW_TIMEOUT,                 {504, "Gateway Time-out"}).
--define(HTTP_VERSION_NOT_SUPPORTED, {505, "HTTP Version not supported"}).
-
--define(STATUS_MSG(Status),
-        integer_to_list(element(1, Status))
-        ++ " "
-        ++ element(2, Status)).
-               
 -define(DEFAULT_CHUNKSIZE, 4096).
 
 -type ewgi_propval() :: atom() | integer() | string() | binary().
 -type ewgi_prop() :: {ewgi_propval(), ewgi_propval()}.
 -type ewgi_proplist() :: [ewgi_prop()].
 
-%% These should go somewhere else:
--type gb_tree_node() :: {any(), any(), any(), any()} | 'nil'.
--type gb_tree() :: {non_neg_integer(), gb_tree_node()}.
-
 %% @type bag() = gb_tree()
+-ifdef(HAS_GB_TREE_SPEC).
 -type bag() :: gb_tree().
+-else.
+-type bag() :: {non_neg_integer(), {any(), any(), any(), any()} | 'nil'}.
+-endif.
 
 %%% Note: Dialyzer currently doesn't support recursive types. When it does, this should change:
 %%%-type ewgi_ri_callback() :: fun(('eof' | {data, binary()}) -> iolist() | ewgi_ri_callback()).
@@ -106,18 +47,25 @@
 %% @type ewgi_version() = {integer(), integer()}
 -type ewgi_version() :: {integer(), integer()}.
 
-%% Convenience records representing request/response contexts
-
 %% @type ewgi_spec() = {'ewgi_spec', function(), function(), string(),
 %%                      ewgi_version(), bag()}
-%% -type(ewgi_spec() :: {'ewgi_spec', ewgi_read_input(), ewgi_write_error(),
-%%                       string(), ewgi_version(), bag()}).
--record(ewgi_spec, {
-          read_input  :: ewgi_read_input(),
-          write_error :: ewgi_write_error(),
-          url_scheme  :: string(),
-          version     :: ewgi_version(),
-          data        :: bag()}).
+
+-type ewgi_spec() :: {'ewgi_spec', ewgi_read_input(),
+                      ewgi_write_error(), string(), ewgi_version(),
+                      bag()}.
+
+-define(IS_EWGI_SPEC(R), ((element(1, R) =:= 'ewgi_spec')
+                          and (size(R) =:= 6))).
+-define(GET_EWGI_READ_INPUT(R), element(2, R)).
+-define(SET_EWGI_READ_INPUT(A, R), setelement(2, R, A)).
+-define(GET_EWGI_WRITE_ERROR(R), element(3, R)).
+-define(SET_EWGI_WRITE_ERROR(A, R), setelement(3, R, A)).
+-define(GET_EWGI_URL_SCHEME(R), element(4, R)).
+-define(SET_EWGI_URL_SCHEME(A, R), setelement(4, R, A)).
+-define(GET_EWGI_VERSION(R), element(5, R)).
+-define(SET_EWGI_VERSION(A, R), setelement(5, R, A)).
+-define(GET_EWGI_DATA(R), element(6, R)).
+-define(SET_EWGI_DATA(A, R), setelement(6, R, A)).
 
 %% @type ewgi_header_val() = string() | 'undefined'
 -type ewgi_header_val() :: string() | 'undefined'.
@@ -133,14 +81,28 @@
 %%                              ewgi_header_val(),
 %%                              ewgi_header_val(),
 %%                              bag()}
--record(ewgi_http_headers, {
-          http_accept                  :: ewgi_header_val(),
-          http_cookie                  :: ewgi_header_val(),
-          http_host                    :: ewgi_header_val(),
-          http_if_modified_since       :: ewgi_header_val(),
-          http_user_agent              :: ewgi_header_val(),
-          http_x_http_method_override  :: ewgi_header_val(),
-          other                        :: bag()}).
+
+-type ewgi_http_headers() :: {'ewgi_http_headers', ewgi_header_val(),
+                              ewgi_header_val(), ewgi_header_val(),
+                              ewgi_header_val(), ewgi_header_val(),
+                              ewgi_header_val(), bag()}.
+
+-define(IS_HTTP_HEADERS(R), ((element(1, R) =:= 'ewgi_http_headers')
+                             and (size(R) =:= 8))).
+-define(GET_HTTP_ACCEPT(R), element(2, R)).
+-define(SET_HTTP_ACCEPT(A, R), setelement(2, R, A)).
+-define(GET_HTTP_COOKIE(R), element(3, R)).
+-define(SET_HTTP_COOKIE(A, R), setelement(3, R, A)).
+-define(GET_HTTP_HOST(R), element(4, R)).
+-define(SET_HTTP_HOST(A, R), setelement(4, R, A)).
+-define(GET_HTTP_IF_MODIFIED_SINCE(R), element(5, R)).
+-define(SET_HTTP_IF_MODIFIED_SINCE(A, R), setelement(5, R, A)).
+-define(GET_HTTP_USER_AGENT(R), element(6, R)).
+-define(SET_HTTP_USER_AGENT(A, R), setelement(6, R, A)).
+-define(GET_HTTP_X_HTTP_METHOD_OVERRIDE(R), element(7, R)).
+-define(SET_HTTP_X_HTTP_METHOD_OVERRIDE(A, R), setelement(7, R, A)).
+-define(GET_HTTP_OTHER(R), element(8, R)).
+-define(SET_HTTP_OTHER(A, R), setelement(8, R, A)).
 
 %% @type ewgi_request_method() = 'OPTIONS' | 'GET' | 'HEAD' | 'POST' | 'PUT' |
 %%       'DELETE' | 'TRACE' | 'CONNECT' | string()
@@ -156,27 +118,58 @@
 %%                          ewgi_val(), ewgi_val(), ewgi_val(), ewgi_val(),
 %%                          ewgi_request_method(), ewgi_val(), ewgi_val(),
 %%                          ewgi_val(), ewgi_val(), ewgi_val()}
--record(ewgi_request, {
-          auth_type                           :: ewgi_val(),
-          content_length                      :: non_neg_integer(),
-          content_type                        :: ewgi_val(),
-          ewgi         = #ewgi_spec{}         :: #ewgi_spec{},
-          gateway_interface                   :: ewgi_val(),
-          http_headers = #ewgi_http_headers{} :: #ewgi_http_headers{},
-          path_info                           :: ewgi_val(),
-          path_translated                     :: ewgi_val(),
-          query_string                        :: ewgi_val(),
-          remote_addr                         :: ewgi_val(),
-          remote_host                         :: ewgi_val(),
-          remote_ident                        :: ewgi_val(),
-          remote_user                         :: ewgi_val(),
-          remote_user_data                    :: ewgi_val(),
-          request_method                      :: ewgi_request_method(),
-          script_name                         :: ewgi_val(),
-          server_name                         :: ewgi_val(),
-          server_port                         :: ewgi_val(),
-          server_protocol                     :: ewgi_val(),
-          server_software                     :: ewgi_val()}).
+
+-type ewgi_request() :: {'ewgi_request', ewgi_val(),
+                         non_neg_integer(), ewgi_val(), ewgi_spec(),
+                         ewgi_val(), ewgi_http_headers(), ewgi_val(),
+                         ewgi_val(), ewgi_val(), ewgi_val(),
+                         ewgi_val(), ewgi_val(), ewgi_val(),
+                         ewgi_val(), ewgi_request_method(),
+                         ewgi_val(), ewgi_val(), ewgi_val(),
+                         ewgi_val(), ewgi_val()}.
+
+-define(IS_EWGI_REQUEST(R), ((element(1, R) =:= 'ewgi_request')
+                             and (size(R) =:= 21))).
+-define(GET_AUTH_TYPE(R), element(2, R)).
+-define(SET_AUTH_TYPE(A, R), setelement(2, R, A)).
+-define(GET_CONTENT_LENGTH(R), element(3, R)).
+-define(SET_CONTENT_LENGTH(A, R), setelement(3, R, A)).
+-define(GET_CONTENT_TYPE(R), element(4, R)).
+-define(SET_CONTENT_TYPE(A, R), setelement(4, R, A)).
+-define(GET_EWGI(R), element(5, R)).
+-define(SET_EWGI(A, R), setelement(5, R, A)).
+-define(GET_GATEWAY_INTERFACE(R), element(6, R)).
+-define(SET_GATEWAY_INTERFACE(A, R), setelement(6, R, A)).
+-define(GET_HTTP_HEADERS(R), element(7, R)).
+-define(SET_HTTP_HEADERS(A, R), setelement(7, R, A)).
+-define(GET_PATH_INFO(R), element(8, R)).
+-define(SET_PATH_INFO(A, R), setelement(8, R, A)).
+-define(GET_PATH_TRANSLATED(R), element(9, R)).
+-define(SET_PATH_TRANSLATED(A, R), setelement(9, R, A)).
+-define(GET_QUERY_STRING(R), element(10, R)).
+-define(SET_QUERY_STRING(A, R), setelement(10, R, A)).
+-define(GET_REMOTE_ADDR(R), element(11, R)).
+-define(SET_REMOTE_ADDR(A, R), setelement(11, R, A)).
+-define(GET_REMOTE_HOST(R), element(12, R)).
+-define(SET_REMOTE_HOST(A, R), setelement(12, R, A)).
+-define(GET_REMOTE_IDENT(R), element(13, R)).
+-define(SET_REMOTE_IDENT(A, R), setelement(13, R, A)).
+-define(GET_REMOTE_USER(R), element(14, R)).
+-define(SET_REMOTE_USER(A, R), setelement(14, R, A)).
+-define(GET_REMOTE_USER_DATA(R), element(15, R)).
+-define(SET_REMOTE_USER_DATA(A, R), setelement(15, R, A)).
+-define(GET_REQUEST_METHOD(R), element(16, R)).
+-define(SET_REQUEST_METHOD(A, R), setelement(16, R, A)).
+-define(GET_SCRIPT_NAME(R), element(17, R)).
+-define(SET_SCRIPT_NAME(A, R), setelement(17, R, A)).
+-define(GET_SERVER_NAME(R), element(18, R)).
+-define(SET_SERVER_NAME(A, R), setelement(18, R, A)).
+-define(GET_SERVER_PORT(R), element(19, R)).
+-define(SET_SERVER_PORT(A, R), setelement(19, R, A)).
+-define(GET_SERVER_PROTOCOL(R), element(20, R)).
+-define(SET_SERVER_PROTOCOL(A, R), setelement(20, R, A)).
+-define(GET_SERVER_SOFTWARE(R), element(21, R)).
+-define(SET_SERVER_SOFTWARE(A, R), setelement(21, R, A)).
 
 %%% Note: Dialyzer currently doesn't support recursive types. When it does, this should change:
 %%%-type stream() :: fun(() -> {} | {any(), stream()}).
@@ -195,18 +188,34 @@
 %% @type ewgi_response() = {'ewgi_response', ewgi_status(),
 %%                          [{ewgi_header_key(), ewgi_header_val()}],
 %%                           ewgi_message_body(), any()}
--record(ewgi_response, {
-          status       :: ewgi_status(),
-          headers = [] :: ewgi_header_list(),
-          message_body :: ewgi_message_body(),
-          err          :: any()}).
+
+-type ewgi_response() :: {'ewgi_response', ewgi_status(), ewgi_header_list(), ewgi_message_body(), any()}.
+
+-define(IS_EWGI_RESPONSE(R), ((element(1, R) =:= 'ewgi_response')
+                              and (size(R) =:= 5))).
+-define(GET_RESPONSE_STATUS(R), element(2, R)).
+-define(SET_RESPONSE_STATUS(A, R), setelement(2, R, A)).
+-define(GET_RESPONSE_HEADERS(R), element(3, R)).
+-define(SET_RESPONSE_HEADERS(A, R), setelement(3, R, A)).
+-define(GET_RESPONSE_MESSAGE_BODY(R), element(4, R)).
+-define(SET_RESPONSE_MESSAGE_BODY(A, R), setelement(4, R, A)).
+-define(GET_RESPONSE_ERROR(R), element(5, R)).
+-define(SET_RESPONSE_ERROR(A, R), setelement(5, R, A)).
 
 %% @type ewgi_context() = {'ewgi_context', ewgi_request(), ewgi_response()}
--record(ewgi_context, {
-          request  = #ewgi_request{}  :: #ewgi_request{},
-          response = #ewgi_response{} :: #ewgi_response{}}).
+
+-type ewgi_context() :: {'ewgi_context', ewgi_request(), ewgi_response()}.
+
+-define(IS_EWGI_CONTEXT(R), ((element(1, R) =:= 'ewgi_context')
+                             and ?IS_EWGI_REQUEST(element(2, R))
+                             and ?IS_EWGI_RESPONSE(element(3, R))
+                             and (size(R) =:= 3))).
+-define(GET_EWGI_REQUEST(R), element(2, R)).
+-define(SET_EWGI_REQUEST(A, R), setelement(2, R, A)).
+-define(GET_EWGI_RESPONSE(R), element(3, R)).
+-define(SET_EWGI_RESPONSE(A, R), setelement(3, R, A)).
 
 %% @type ewgi_app() = function()
--type ewgi_app() :: fun((#ewgi_context{}) -> #ewgi_context{}).
+-type ewgi_app() :: fun((ewgi_context()) -> ewgi_context()).
 
 -endif.

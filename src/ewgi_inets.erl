@@ -31,11 +31,11 @@
 
 do(A) ->
     try parse_arg(A) of
-        Req when is_record(Req, ewgi_request) ->
+        Req when ?IS_EWGI_REQUEST(Req) ->
             try process_application(ewgi_api:context(Req, ewgi_api:empty_response())) of
                 not_found ->
                     {proceed, [{response, {404, []}}]};
-                Ctx when is_record(Ctx, ewgi_context) ->
+                Ctx when ?IS_EWGI_CONTEXT(Ctx) ->
                     handle_result(A, Ctx)
             catch
                 _:Reason ->
@@ -193,29 +193,36 @@ parse_http_header_element(http_x_http_method_override, A) ->
     get_header("x-http-method-override", A);
 
 parse_http_header_element(other, #mod{parsed_header=H}) ->
-    lists:foldl(fun({K0, _}=Pair, Acc) ->
-                        {K, V} = ewgi_api:normalize_header(Pair),
-                        case K of
-                            K when K =:= "content-length"
-                            ; K =:= "content-type"
-                            ; K =:= "accept"
-                            ; K =:= "cookie"
-                            ; K =:= "host"
-                            ; K =:= "if-modified-since"
-                            ; K =:= "user-agent"
-                            ; K =:= "x-http-method-override" ->
-                                Acc;
-                            _ ->
-                                Ex = case gb_trees:lookup(K, Acc) of
-                                         {value, L} -> L;
-                                         none ->       []
-                                     end,
-                                gb_trees:insert(K, [{K0, V}|Ex], Acc)
-                        end
-                end, gb_trees:empty(), H);
+    lists:foldl(fun parse_other_header/2, gb_trees:empty(), H);
 
 parse_http_header_element(_, _) ->
     undefined.
+
+parse_other_header({K0, _}=Pair, Acc) ->
+    parse_other_header1(K0, ewgi_api:normalize_header(Pair), Acc).
+
+parse_other_header1(_, {"content-length", _}, Acc) ->
+    Acc;
+parse_other_header1(_, {"content-type", _}, Acc) ->
+    Acc;
+parse_other_header1(_, {"accept", _}, Acc) ->
+    Acc;
+parse_other_header1(_, {"cookie", _}, Acc) ->
+    Acc;
+parse_other_header1(_, {"host", _}, Acc) ->
+    Acc;
+parse_other_header1(_, {"if-modified-since", _}, Acc) ->
+    Acc;
+parse_other_header1(_, {"user-agent", _}, Acc) ->
+    Acc;
+parse_other_header1(_, {"x-http-method-override", _}, Acc) ->
+    Acc;
+parse_other_header1(K0, {K, V}, Acc) ->
+    Ex = case gb_trees:lookup(K, Acc) of
+             {value, L} -> L;
+             none ->       []
+         end,
+    gb_trees:enter(K, [{K0, V}|Ex], Acc).
 
 handle_result(#mod{config_db=Db}=A, Ctx) ->
     {Code, _} = ewgi_api:response_status(Ctx),

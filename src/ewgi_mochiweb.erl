@@ -37,21 +37,21 @@
 %%====================================================================
 run(MochiReq) ->
     try parse_arg(MochiReq) of
-        Req when is_record(Req, ewgi_request) ->
+        Req when ?IS_EWGI_REQUEST(Req) ->
             try process_application(ewgi_api:context(Req, ewgi_api:empty_response())) of
                 not_found ->
                     MochiReq:not_found();
-                Ctx when is_record(Ctx, ewgi_context) ->
+                Ctx when ?IS_EWGI_CONTEXT(Ctx) ->
                     handle_result(Ctx, MochiReq)
             catch
                 _:Reason ->
                     error_logger:error_report(Reason),
-                    MochiReq:respond(?EWGI2MOCHI(?INTERNAL_SERVER_ERROR, []))
+                    MochiReq:respond({500, [], "Internal server error"})
             end
     catch
         _:Reason ->
             error_logger:error_report(Reason),
-            MochiReq:respond(?EWGI2MOCHI(?BAD_REQ, []))
+            MochiReq:respond({400, [], "Bad request"})
     end.
 
 %% Chunked response if a nullary function is returned

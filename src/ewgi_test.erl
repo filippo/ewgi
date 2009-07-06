@@ -29,15 +29,18 @@
 
 -include_lib("ewgi.hrl").
 
-testapp(#ewgi_context{response=R}=C) ->
+testapp(C) ->
     Body = io_lib:format("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\"><html><body><h1>EWGI Context</h1><h2>Request</h2>~s</body></html>", [htmlise(C)]),
-    C#ewgi_context{response=R#ewgi_response{status={200, "OK"},
-                                            headers=[{"content-type", "text/html"}],
-                                            message_body=Body}}.
+    Stat = {200, "OK"},
+    H = [{"content-type", "text/html"}],
+    ewgi_api:response_message_body(
+      Body, ewgi_api:response_headers(
+              H, ewgi_api:response_status(Stat, C))).
 
 testapp_chunked(C0) ->
-    #ewgi_context{response=#ewgi_response{message_body=B}=R}= C = testapp(C0),
-    C#ewgi_context{response=R#ewgi_response{message_body=list_to_stream(B)}}.
+    C = testapp(C0),
+    B = ewgi_api:response_message_body(C),
+    ewgi_api:response_message_body(list_to_stream(B), C).
 
 htmlise(C) ->
     iolist_to_binary(
