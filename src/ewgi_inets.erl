@@ -226,7 +226,7 @@ parse_other_header1(K0, {K, V}, Acc) ->
 
 handle_result(#mod{config_db=Db}=A, Ctx) ->
     {Code, _} = ewgi_api:response_status(Ctx),
-    Headers0 = [{string:to_lower(H), V} || {H, V} <- ewgi_api:response_headers(Ctx)],
+    Headers0 = [{string:to_lower(H), binary_to_list(iolist_to_binary(V))} || {H, V} <- ewgi_api:response_headers(Ctx)],
     Headers = lists:foldl(fun fold_header/2, [], Headers0),
     case ewgi_api:response_message_body(Ctx) of
         Body when is_function(Body, 0) ->
