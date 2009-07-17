@@ -211,7 +211,7 @@ headers(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
 
 -spec headers(ewgi_http_headers(), ewgi_context()) -> ewgi_context().
 headers(H, Ctx) when ?IS_HTTP_HEADERS(H), ?IS_EWGI_CONTEXT(Ctx) ->
-    request(?SET_HTTP_HEADERS(H, headers(Ctx)), Ctx).
+    request(?SET_HTTP_HEADERS(H, request(Ctx)), Ctx).
 
 -spec get_header_value(string(), ewgi_context()) -> ewgi_header_val().
 get_header_value(Hdr0, Ctx) when is_list(Hdr0), ?IS_EWGI_CONTEXT(Ctx) ->
