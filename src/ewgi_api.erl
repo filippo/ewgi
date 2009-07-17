@@ -241,13 +241,57 @@ get_header1(Hdr, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
 
 insert_header(K0, V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
     K = string:to_lower(K0),
-    D = t_insert_header(K, {K0, V}, headers(Ctx)),
-    headers(D, Ctx).
+    insert_header1(K, K0, V, Ctx).
+
+combine_headers(K, V, Ctx) ->
+    case get_header1(K, Ctx) of
+        undefined ->
+                 V;
+        S when is_list(S) ->
+            string:join([S, V], ", ")
+    end.
+
+insert_header1("accept"=K, _, V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    V1 = combine_headers(K, V, Ctx),
+    headers(?SET_HTTP_ACCEPT(V1, headers(Ctx)), Ctx);
+insert_header1("cookie"=K,  _, V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    V1 = combine_headers(K, V, Ctx),
+    headers(?SET_HTTP_COOKIE(V1, headers(Ctx)), Ctx);
+insert_header1("host"=K, _, V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    V1 = combine_headers(K, V, Ctx),
+    headers(?SET_HTTP_HOST(V1, headers(Ctx)), Ctx);
+insert_header1("if-modified-since"=K, _, V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    V1 = combine_headers(K, V, Ctx),
+    headers(?SET_HTTP_IF_MODIFIED_SINCE(V1, headers(Ctx)), Ctx);
+insert_header1("user-agent"=K, _, V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    V1 = combine_headers(K, V, Ctx),
+    headers(?SET_HTTP_USER_AGENT(V1, headers(Ctx)), Ctx);
+insert_header1("x-http-method-override"=K, _, V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    V1 = combine_headers(K, V, Ctx),
+    headers(?SET_HTTP_X_HTTP_METHOD_OVERRIDE(V1, headers(Ctx)), Ctx);
+insert_header1(K, K0, V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    D = t_insert_header(K, {K0, V}, ?GET_HTTP_OTHER(headers(Ctx))),
+    headers(?SET_HTTP_OTHER(D, headers(Ctx)), Ctx).
 
 set_header(K0, V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
     K = string:to_lower(K0),
-    D = t_enter_header(K, {K0, V}, headers(Ctx)),
-    headers(D, Ctx).
+    set_header1(K, K0, V, Ctx).
+
+set_header1("accept", _, V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    headers(?SET_HTTP_ACCEPT(V, headers(Ctx)), Ctx);
+set_header1("cookie",  _, V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    headers(?SET_HTTP_COOKIE(V, headers(Ctx)), Ctx);
+set_header1("host", _, V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    headers(?SET_HTTP_HOST(V, headers(Ctx)), Ctx);
+set_header1("if-modified-since", _, V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    headers(?SET_HTTP_IF_MODIFIED_SINCE(V, headers(Ctx)), Ctx);
+set_header1("user-agent", _, V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    headers(?SET_HTTP_USER_AGENT(V, headers(Ctx)), Ctx);
+set_header1("x-http-method-override", _, V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    headers(?SET_HTTP_X_HTTP_METHOD_OVERRIDE(V, headers(Ctx)), Ctx);
+set_header1(K, K0, V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
+    D = t_enter_header(K, {K0, V}, ?GET_HTTP_OTHER(headers(Ctx))),
+    headers(?SET_HTTP_OTHER(D, headers(Ctx)), Ctx).
 
 auth_type(V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
     request(?SET_AUTH_TYPE(V, request(Ctx)), Ctx).
