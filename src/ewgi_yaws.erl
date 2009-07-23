@@ -113,6 +113,8 @@ parse_element(content_type, #arg{headers=#headers{content_type=V}}) ->
 parse_element(gateway_interface, _) ->
     "EWGI/1.0";
 
+parse_element(path_info, #arg{pathinfo=V}) when V =:= undefined ->
+    "/";
 parse_element(path_info, #arg{pathinfo=V}) ->
     V;
 
