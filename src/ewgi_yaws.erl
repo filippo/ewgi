@@ -207,7 +207,13 @@ parse_http_header_element(http_user_agent, #arg{headers=#headers{user_agent=V}})
     V;
 
 parse_http_header_element(http_x_http_method_override, #arg{headers=#headers{other=L}}) ->
-    lists:foldl(fun({http_header,_,K,_,V}, undefined) ->
+    lists:foldl(fun({http_header,_,K0,_,V}, undefined) ->
+                        case is_atom(K0) of
+                                true ->
+                                        K = atom_to_list(K0);
+                                false ->
+                                        K = K0
+                        end,
                         case string:to_lower(K) of
                             "x-http-method-override" ->
                                 V;
