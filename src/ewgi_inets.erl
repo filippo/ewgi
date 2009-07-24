@@ -321,6 +321,8 @@ fold_header({"trailer", V}, Acc) ->
     [{trailer, V}|Acc];
 fold_header({"transfer-encoding", V}, Acc) ->
     [{transfer_encoding, V}|Acc];
+fold_header({"set-cookie", V}, Acc) ->
+    [{set_cookie, V}|Acc];
 fold_header(_, Acc) ->
     %% Ignore unrecognised headers
     Acc.
