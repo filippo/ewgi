@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% File    : ewgi_application.erl
+%%% File    : ewgi_testapp.erl
 %%% Authors : Hunter Morris <huntermorris@gmail.com>
 %%% License :
 %%% The contents of this file are subject to the Mozilla Public
@@ -22,7 +22,7 @@
 %%%
 %%% Created : 05 July 2009 by Hunter Morris <huntermorris@gmail.com>
 %%%-------------------------------------------------------------------
--module(ewgi_test).
+-module(ewgi_testapp).
 
 %% Test EWGI applications
 -export([testapp/1, testapp_chunked/1]).
