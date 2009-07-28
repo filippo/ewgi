@@ -27,3 +27,7 @@ lib:
 
 dialyzer: erl
 	@dialyzer -c ebin
+
+test: erl
+	@$(ERL) -pa $(EBIN_DIRS) -pa ebin -noinput +B \
+	-eval 'case lists:member(error, ewgi_test:test()) of true -> halt(1); _ -> halt(0) end.'
