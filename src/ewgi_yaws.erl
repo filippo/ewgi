@@ -238,6 +238,13 @@ parse_http_header_element(other, #arg{headers=#headers{other=HOther}=H}) ->
                                      end,
                                 gb_trees:insert(K, lists:reverse([{K0, V}|lists:reverse(Ex)]), DAcc)
                         end, gb_trees:empty(), HOther),
+	FixedAuth =
+		case H#headers.authorization of
+			undefined ->
+				undefined;
+			{_Username, _Password, Auth} ->
+				[{"authorization", Auth}]
+		end,
     lists:foldl(fun({K, V}, DAcc) ->
                         gb_trees:insert(K, V, DAcc)
                 end, Dict0, [{"connection", H#headers.connection},
@@ -253,7 +260,7 @@ parse_http_header_element(other, #arg{headers=#headers{other=HOther}=H}) ->
                              {"content-length", H#headers.content_length},
                              {"content-type", H#headers.content_type},
                              {"content-encoding", H#headers.content_encoding},
-                             {"authorization", H#headers.authorization},
+                             {"authorization", FixedAuth},
                              {"transfer-encoding", H#headers.transfer_encoding}]).
 
 %% Final callback after entire input has been read
