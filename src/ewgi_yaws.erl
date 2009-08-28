@@ -238,30 +238,33 @@ parse_http_header_element(other, #arg{headers=#headers{other=HOther}=H}) ->
                                      end,
                                 gb_trees:insert(K, lists:reverse([{K0, V}|lists:reverse(Ex)]), DAcc)
                         end, gb_trees:empty(), HOther),
-	FixedAuth =
-		case H#headers.authorization of
-			undefined ->
-				undefined;
-			{_Username, _Password, Auth} ->
-				[{"authorization", Auth}]
-		end,
-    lists:foldl(fun({K, V}, DAcc) ->
-                        gb_trees:insert(K, V, DAcc)
-                end, Dict0, [{"connection", H#headers.connection},
-                             {"if-match", H#headers.if_match},
-                             {"if-none-match", H#headers.if_none_match},
-                             {"if-range", H#headers.if_range},
-                             {"if-unmodified-since", H#headers.if_unmodified_since},
-                             {"range", H#headers.range},
-                             {"referer", H#headers.referer},
-                             {"accept-ranges", H#headers.accept_ranges},
-                             {"keep-alive", H#headers.keep_alive},
-                             {"location", H#headers.location},
-                             {"content-length", H#headers.content_length},
-                             {"content-type", H#headers.content_type},
-                             {"content-encoding", H#headers.content_encoding},
-                             {"authorization", FixedAuth},
-                             {"transfer-encoding", H#headers.transfer_encoding}]).
+    FixedAuth =
+	case H#headers.authorization of
+	    undefined ->
+		undefined;
+	    {_Username, _Password, Auth} ->
+		Auth
+	end,
+    Headers = [{"Connection", H#headers.connection},
+	       {"If-Match", H#headers.if_match},
+	       {"If-None-match", H#headers.if_none_match},
+	       {"If-Range", H#headers.if_range},
+	       {"If-Unmodified-Since", H#headers.if_unmodified_since},
+	       {"Range", H#headers.range},
+	       {"Referer", H#headers.referer},
+	       {"Accept-Ranges", H#headers.accept_ranges},
+	       {"Keep-Alive", H#headers.keep_alive},
+	       {"Location", H#headers.location},
+	       {"Content-Length", H#headers.content_length},
+	       {"Content-Type", H#headers.content_type},
+	       {"Content-Encoding", H#headers.content_encoding},
+	       {"Authorization", FixedAuth},
+	       {"Transfer-Encoding", H#headers.transfer_encoding}],
+    DefinedHeaders = [{K,V} || {K,V} <- Headers, V /= undefined],
+    lists:foldl(fun({K0, V0}, DAcc) ->
+			{K, V} = ewgi_api:normalize_header({K0, V0}),
+                        gb_trees:insert(K, [{K0, V}], DAcc)
+                end, Dict0, DefinedHeaders).
 
 %% Final callback after entire input has been read
 read_input(Callback, {Length, _ChunkSz}, _Left) when is_function(Callback), Length =< 0 ->
