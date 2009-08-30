@@ -105,7 +105,10 @@ parse_element(auth_type, #arg{headers=#headers{authorization=V}}) ->
     V;
 
 parse_element(content_length, #arg{headers=#headers{content_length=V}}) ->
-    V;
+	case V of
+		undefined -> 0;
+		_ -> list_to_integer(V)
+	end;
 
 parse_element(content_type, #arg{headers=#headers{content_type=V}}) ->
     V;
@@ -196,8 +199,10 @@ parse_ewgi_element(_, _) ->
 parse_http_header_element(http_accept, #arg{headers=#headers{accept=V}}) ->
     V;
 
-parse_http_header_element(http_cookie, #arg{headers=#headers{cookie=V}}) ->
+parse_http_header_element(http_cookie, #arg{headers=#headers{cookie=[V]}}) ->
     V;
+parse_http_header_element(http_cookie, #arg{headers=#headers{cookie=_}}) ->
+    undefined;
 
 parse_http_header_element(http_host, #arg{headers=#headers{host=V}}) ->
     V;
