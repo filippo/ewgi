@@ -244,36 +244,30 @@ handle_result_wrap_stream(#mod{http_version=Ver}, ChunkedAllowed, Code, Headers,
     Length = {content_length, integer_to_list(erlang:iolist_size(Body))},
     {proceed, [{response, {response, [{code, Code}, Length] ++ Headers, Body}}]};
 handle_result_wrap_stream(A, true, Code, Headers, Body) ->
-    process_flag(trap_exit, true),
-    Self = self(),
     ExtraHeaders = httpd_response:cache_headers(A),
     httpd_response:send_header(A, Code, ExtraHeaders ++ [{transfer_encoding, "chunked"}|Headers]),
-    %% Spawn worker process for chunks to allow for timeouts and avoid socket deadlock
-    Pid = spawn_link(fun() -> send_body(A, Self, Body) end),
-    Size = handle_stream_body(A, Pid, 0),
-    process_flag(trap_exit, false),
-    {proceed, [{response, {already_sent, Code, Size}}]}.
+    handle_stream(A, Code, Body, 0).
 
-send_body(A, Self, Body) ->
-    case Body() of
-        {H, T} ->
-            httpd_response:send_chunk(A, [H], false),
-            Self ! {ok, erlang:iolist_size([H])},
-            send_body(A, Self, T);
+handle_stream(A, Code, Generator, Size) when is_function(Generator, 0) ->
+    case (catch Generator()) of
+        {H, T} when is_function(T, 0) ->
+	    case H of
+		<<>> -> ok;
+		[] -> ok;
+		_ ->
+		    httpd_response:send_chunk(A, [H], false)
+	    end,
+            handle_stream(A, Code, T, Size + erlang:iolist_size([H]));
         {} ->
             httpd_response:send_final_chunk(A, false),
-            exit(normal)
-    end.
-
-handle_stream_body(A, Pid, Size) ->
-    receive
-        {ok, Len} ->
-            handle_stream_body(A, Pid, Size + Len);
-        {'EXIT', Pid, normal} ->
-            Size;
-        {'EXIT', Pid, Reason} ->
-            exit({chunking_process_died, Pid, Reason})
-    end.
+	    {proceed, [{response, {already_sent, Code, Size}}]};
+	Error ->
+	    error_logger:error_report(io_lib:format("Unexpected stream ouput (~p): ~p~n", [Generator, Error])),
+            httpd_response:send_final_chunk(A, false)
+    end;
+handle_stream(A, _Code, Generator, _Size) ->
+    error_logger:error_report(io_lib:format("Invalid stream generator: ~p~n", [Generator])),
+    httpd_response:send_final_chunk(A, false).
 
 stream_to_list(S) when is_function(S, 0) ->
     case S() of
