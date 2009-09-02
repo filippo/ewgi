@@ -55,17 +55,18 @@ run(Arg) ->
     end.
 
 handle_result(Ctx) ->
-    Body = case ewgi_api:response_message_body(Ctx) of
-               F when is_function(F, 0) ->
-                   handle_stream_result(F);
-               B ->
-                   B
-           end,
     {Code, _} = ewgi_api:response_status(Ctx),
     H = ewgi_api:response_headers(Ctx),
     ContentType = get_content_type(H),
     Acc = get_yaws_headers(H),
-    [{status, Code}, {content, ContentType, Body}|Acc].
+    case ewgi_api:response_message_body(Ctx) of
+	Generator when is_function(Generator, 0) ->
+	    YawsPid = self(),
+	    spawn(fun() -> handle_stream(Generator, YawsPid) end),
+	    {streamcontent_with_timeout, ContentType, <<>>, infinity};
+	Body ->
+	    [{status, Code}, {content, ContentType, Body}|Acc]
+    end.
 
 get_yaws_headers(H) ->
     lists:foldl(fun({K0, V}, Acc) ->
@@ -87,13 +88,26 @@ get_content_type(H) ->
                         end
                 end, "text/plain", H).
 
-handle_stream_result(F) when is_function(F, 0) ->
-    handle_stream_result(F(), []).
+handle_stream(Generator, YawsPid) when is_function(Generator, 0) ->
+    case (catch Generator()) of
+        {H, T} when is_function(T, 0) ->
+	    case H of
+		<<>> -> ok;
+		[] -> ok;
+		_ ->
+		    yaws_api:stream_chunk_deliver(YawsPid, [H])
+	    end,
+	    handle_stream(T, YawsPid);
+	{} ->
+	    yaws_api:stream_chunk_end(YawsPid);
+	Error ->
+	    error_logger:error_report(io_lib:format("Unexpected stream ouput (~p): ~p~n", [Generator, Error])),
+	    yaws_api:stream_chunk_end(YawsPid)
+    end;
+handle_stream(Generator, YawsPid) ->
+    error_logger:error_report(io_lib:format("Invalid stream generator: ~p~n", [Generator])),
+    yaws_api:stream_chunk_end(YawsPid).
 
-handle_stream_result({}, Acc) ->
-    lists:reverse(Acc);
-handle_stream_result({H, T}, Acc) ->
-    handle_stream_result(T(), [H|Acc]).
 
 %%--------------------------------------------------------------------
 %%% Internal functions
