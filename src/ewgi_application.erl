@@ -29,7 +29,7 @@
 -export([run/2]).
 
 %% Useful middleware
--export([module_mw/1, rpc_mw/3, mfa_mw/2]).
+-export([module_mw/2, rpc_mw/4, mfa_mw/3]).
 
 -include_lib("ewgi.hrl").
 
@@ -39,29 +39,29 @@
 run(Application, Context) when is_function(Application, 1) ->
     Application(Context).
 
-%% @spec module_mw(Module::term()) -> ewgi_app()
-%% @doc Produces a middleware application which calls the handle/1 function exported by Module.
--spec module_mw(any()) -> ewgi_app().
-module_mw(Module) ->
+%% @spec module_mw(Module::term(), Args:any()) -> ewgi_app()
+%% @doc Produces a middleware application which calls the run/1 function exported by Module.
+-spec module_mw(any(), any()) -> ewgi_app().
+module_mw(Module, Args) ->
     F = fun(Context) ->
-                Module:handle(Context)
+                Module:run(Context, Args)
         end,
     F.
 
-%% @spec rpc_mw(Node::atom(), Module::atom(), Fun::atom()) -> ewgi_app()
+%% @spec rpc_mw(Node::atom(), Module::atom(), Fun::atom(), Args:any()) -> ewgi_app()
 %% @doc Produces a middleware application which calls the remote function Module:Fun on Node.
--spec rpc_mw(atom(), atom(), atom()) -> ewgi_app().
-rpc_mw(Node, Module, Fun) ->
+-spec rpc_mw(atom(), atom(), atom(), any()) -> ewgi_app().
+rpc_mw(Node, Module, Fun, Args) ->
     F = fun(Context) ->
-                rpc:call(Node, Module, Fun, [Context])
+                rpc:call(Node, Module, Fun, [Context, Args])
         end,
     F.
 
-%% @spec mfa_mw(Module::atom(), Fun::atom()) -> ewgi_app()
-%% @doc Produces a middleware application which calls the function Module:Fun(Args)
--spec mfa_mw(atom(), atom()) -> ewgi_app().
-mfa_mw(Module, Fun) when is_atom(Module), is_atom(Fun) ->
+%% @spec mfa_mw(Module::atom(), Fun::atom(), Args:any()) -> ewgi_app()
+%% @doc Produces a middleware application which calls the function Module:Fun(Context, Args)
+-spec mfa_mw(atom(), atom(), any()) -> ewgi_app().
+mfa_mw(Module, Fun, Args) when is_atom(Module), is_atom(Fun) ->
     F = fun(Context) ->
-                apply(Module, Fun, [Context])
+                apply(Module, Fun, [Context, Args])
         end,
     F.
