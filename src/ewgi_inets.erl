@@ -36,7 +36,7 @@ do(A) ->
                 not_found ->
                     {proceed, [{response, {404, []}}]};
                 Ctx when ?IS_EWGI_CONTEXT(Ctx) ->
-                    handle_result(A, Ctx)
+                    handle_result(A, ?INSPECT_EWGI_RESPONSE(Ctx))
             catch
                 _:Reason ->
                     error_logger:error_report(io_lib:format("Responding with 500 INTERNAL SERVER ERROR.~nReason: ~p~nStack: ~p~n", [Reason, erlang:get_stacktrace()])),

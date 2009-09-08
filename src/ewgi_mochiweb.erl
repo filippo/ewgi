@@ -42,7 +42,7 @@ run(MochiReq) ->
                 not_found ->
                     MochiReq:not_found();
                 Ctx when ?IS_EWGI_CONTEXT(Ctx) ->
-                    handle_result(Ctx, MochiReq)
+                    handle_result(?INSPECT_EWGI_RESPONSE(Ctx), MochiReq)
             catch
                 _:Reason ->
                     error_logger:error_report(Reason),

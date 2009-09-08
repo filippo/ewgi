@@ -42,7 +42,7 @@ run(Arg) ->
             Ctx0 = ewgi_api:context(Req, ewgi_api:empty_response()),
             try Appl(Ctx0) of
                 Ctx when ?IS_EWGI_CONTEXT(Ctx) ->
-                    handle_result(Ctx)
+                    handle_result(?INSPECT_EWGI_RESPONSE(Ctx))
             catch
                 _:Reason ->
                     error_logger:error_report(Reason),
