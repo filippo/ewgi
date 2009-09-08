@@ -225,9 +225,11 @@
 	begin
 	    error_logger:info_msg("Inpecting the final ewgi_response()...~n"
 				  "Status: ~p~n"
+				  "Content-Type: ~p~n"
 				  "Headers: ~p~n"
 				  "Body: ~p~n",
 				  [ewgi_api:response_status(Ctx),
+				   ewgi_api:content_type(Ctx),
 				   ewgi_api:response_headers(Ctx),
 				   ewgi_api:response_message_body(Ctx)]),
 	    Ctx
