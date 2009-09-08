@@ -316,9 +316,9 @@ fold_header({"trailer", V}, Acc) ->
 fold_header({"transfer-encoding", V}, Acc) ->
     [{transfer_encoding, V}|Acc];
 fold_header({"set-cookie", V}, Acc) ->
-    [{set_cookie, V}|Acc];
+    [{"set-cookie", V}|Acc];
 fold_header({"www-authenticate", V}, Acc) ->
-    [{'www-authenticate', V}|Acc];
+    [{"www-authenticate", V}|Acc];
 fold_header(_, Acc) ->
     %% Ignore unrecognised headers
     Acc.
