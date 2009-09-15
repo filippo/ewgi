@@ -56,8 +56,8 @@ run(Arg) ->
 
 handle_result(Ctx) ->
     {Code, _} = ewgi_api:response_status(Ctx),
+    ContentType = ewgi_api:content_type(Ctx),
     H = ewgi_api:response_headers(Ctx),
-    ContentType = get_content_type(H),
     Acc = get_yaws_headers(H),
     case ewgi_api:response_message_body(Ctx) of
 	Generator when is_function(Generator, 0) ->
@@ -77,16 +77,6 @@ get_yaws_headers(H) ->
                                 [{header, [K ++ ": ", V]}|Acc]
                         end
                 end, [], H).
-
-get_content_type(H) ->
-    lists:foldl(fun({K, V}, Def) ->
-                        case string:to_lower(K) of
-                            "content-type" ->
-                                V;
-                            _ ->
-                                Def
-                        end
-                end, "text/plain", H).
 
 handle_stream(Generator, YawsPid) when is_function(Generator, 0) ->
     case (catch Generator()) of
