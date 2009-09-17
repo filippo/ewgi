@@ -56,7 +56,11 @@ run(Arg) ->
 
 handle_result(Ctx) ->
     {Code, _} = ewgi_api:response_status(Ctx),
-    ContentType = ewgi_api:content_type(Ctx),
+    ContentType =
+	case ewgi_api:content_type(Ctx) of
+	    undefined -> "text/plain";
+	    CT -> CT
+	end,
     H = ewgi_api:response_headers(Ctx),
     Acc = get_yaws_headers(H),
     case ewgi_api:response_message_body(Ctx) of
