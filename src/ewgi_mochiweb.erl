@@ -42,7 +42,7 @@ run(MochiReq) ->
                 not_found ->
                     MochiReq:not_found();
                 Ctx when ?IS_EWGI_CONTEXT(Ctx) ->
-                    handle_result(Ctx, MochiReq)
+                    handle_result(?INSPECT_EWGI_RESPONSE(Ctx), MochiReq)
             catch
                 _:Reason ->
                     error_logger:error_report(Reason),
@@ -63,22 +63,32 @@ handle_result(Ctx, Req) ->
 
 handle_result1(Code, Headers, F, Req) when is_function(F, 0) ->
     MochiResp = Req:respond({Code, Headers, chunked}),
-    handle_stream_result(MochiResp, F());
+    %handle_stream_result(MochiResp, (catch F()));
+    handle_stream(MochiResp, F);
 handle_result1(Code, Headers, L, Req) ->
     Req:respond({Code, Headers, L}).
 
 %% Treat a stream with chunked transfer encoding
-handle_stream_result(R, {}) ->
-    R:write_chunk([]);
-handle_stream_result(R, {[], T}) when is_function(T, 0) ->
-    %% Don't prematurely end the stream
-    handle_stream_result(R, T());
-handle_stream_result(R, {<<>>, T}) when is_function(T, 0) ->
-    %% Don't prematurely end the stream
-    handle_stream_result(R, T());
-handle_stream_result(R, {H, T}) when is_function(T, 0) ->
-    R:write_chunk(H),
-    handle_stream_result(R, T()).
+handle_stream(R, Generator) when is_function(Generator, 0) ->
+    case (catch Generator()) of
+	{H, T} when is_function(T, 0) ->
+	    %% Prevent finishing the chunked response
+	    case H of
+		<<>> -> ok;
+		[] -> ok;
+		_ ->
+		    R:write_chunk(H)
+	    end,
+	    handle_stream(R, T);
+	{} ->
+	    R:write_chunk([]);
+	Error ->
+	    error_logger:error_report(io_lib:format("Unexpected stream ouput (~p): ~p~n", [Generator, Error])),
+	    R:write_chunk([])
+    end;
+handle_stream(R, Generator) ->
+    error_logger:error_report(io_lib:format("Invalid stream generator: ~p~n", [Generator])),
+    R:write_chunk([]).
 
 process_application(Ctx) when is_list(Appl) ->
     Path = ewgi_api:path_info(Ctx),

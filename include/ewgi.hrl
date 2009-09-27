@@ -218,4 +218,21 @@
 %% @type ewgi_app() = function()
 -type ewgi_app() :: fun((ewgi_context()) -> ewgi_context()).
 
+-ifndef(debug).
+-define(INSPECT_EWGI_RESPONSE(Ctx), Ctx).
+-else.
+-define(INSPECT_EWGI_RESPONSE(Ctx),
+	begin
+	    error_logger:info_msg("Inpecting the final ewgi_response()...~n"
+				  "Status: ~p~n"
+				  "Headers: ~p~n"
+				  "Body: ~p~n",
+				  [ewgi_api:response_status(Ctx),
+				   ewgi_api:response_headers(Ctx),
+				   ewgi_api:response_message_body(Ctx)]),
+	    Ctx
+	end
+       ).
+-endif.
+
 -endif.

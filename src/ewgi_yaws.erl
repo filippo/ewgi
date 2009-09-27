@@ -42,7 +42,7 @@ run(Arg) ->
             Ctx0 = ewgi_api:context(Req, ewgi_api:empty_response()),
             try Appl(Ctx0) of
                 Ctx when ?IS_EWGI_CONTEXT(Ctx) ->
-                    handle_result(Ctx)
+                    handle_result(?INSPECT_EWGI_RESPONSE(Ctx))
             catch
                 _:Reason ->
                     error_logger:error_report(Reason),
@@ -55,17 +55,18 @@ run(Arg) ->
     end.
 
 handle_result(Ctx) ->
-    Body = case ewgi_api:response_message_body(Ctx) of
-               F when is_function(F, 0) ->
-                   handle_stream_result(F);
-               B ->
-                   B
-           end,
     {Code, _} = ewgi_api:response_status(Ctx),
     H = ewgi_api:response_headers(Ctx),
     ContentType = get_content_type(H),
     Acc = get_yaws_headers(H),
-    [{status, Code}, {content, ContentType, Body}|Acc].
+    case ewgi_api:response_message_body(Ctx) of
+	Generator when is_function(Generator, 0) ->
+	    YawsPid = self(),
+	    spawn(fun() -> handle_stream(Generator, YawsPid) end),
+	    {streamcontent_with_timeout, ContentType, <<>>, infinity};
+	Body ->
+	    [{status, Code}, {content, ContentType, Body}|Acc]
+    end.
 
 get_yaws_headers(H) ->
     lists:foldl(fun({K0, V}, Acc) ->
@@ -87,13 +88,26 @@ get_content_type(H) ->
                         end
                 end, "text/plain", H).
 
-handle_stream_result(F) when is_function(F, 0) ->
-    handle_stream_result(F(), []).
+handle_stream(Generator, YawsPid) when is_function(Generator, 0) ->
+    case (catch Generator()) of
+        {H, T} when is_function(T, 0) ->
+	    case H of
+		<<>> -> ok;
+		[] -> ok;
+		_ ->
+		    yaws_api:stream_chunk_deliver(YawsPid, [H])
+	    end,
+	    handle_stream(T, YawsPid);
+	{} ->
+	    yaws_api:stream_chunk_end(YawsPid);
+	Error ->
+	    error_logger:error_report(io_lib:format("Unexpected stream ouput (~p): ~p~n", [Generator, Error])),
+	    yaws_api:stream_chunk_end(YawsPid)
+    end;
+handle_stream(Generator, YawsPid) ->
+    error_logger:error_report(io_lib:format("Invalid stream generator: ~p~n", [Generator])),
+    yaws_api:stream_chunk_end(YawsPid).
 
-handle_stream_result({}, Acc) ->
-    lists:reverse(Acc);
-handle_stream_result({H, T}, Acc) ->
-    handle_stream_result(T(), [H|Acc]).
 
 %%--------------------------------------------------------------------
 %%% Internal functions
@@ -105,7 +119,10 @@ parse_element(auth_type, #arg{headers=#headers{authorization=V}}) ->
     V;
 
 parse_element(content_length, #arg{headers=#headers{content_length=V}}) ->
-    V;
+	case V of
+		undefined -> 0;
+		_ -> list_to_integer(V)
+	end;
 
 parse_element(content_type, #arg{headers=#headers{content_type=V}}) ->
     V;
@@ -196,8 +213,10 @@ parse_ewgi_element(_, _) ->
 parse_http_header_element(http_accept, #arg{headers=#headers{accept=V}}) ->
     V;
 
-parse_http_header_element(http_cookie, #arg{headers=#headers{cookie=V}}) ->
+parse_http_header_element(http_cookie, #arg{headers=#headers{cookie=[V]}}) ->
     V;
+parse_http_header_element(http_cookie, #arg{headers=#headers{cookie=_}}) ->
+    undefined;
 
 parse_http_header_element(http_host, #arg{headers=#headers{host=V}}) ->
     V;
@@ -238,23 +257,33 @@ parse_http_header_element(other, #arg{headers=#headers{other=HOther}=H}) ->
                                      end,
                                 gb_trees:insert(K, lists:reverse([{K0, V}|lists:reverse(Ex)]), DAcc)
                         end, gb_trees:empty(), HOther),
-    lists:foldl(fun({K, V}, DAcc) ->
-                        gb_trees:insert(K, V, DAcc)
-                end, Dict0, [{"connection", H#headers.connection},
-                             {"if-match", H#headers.if_match},
-                             {"if-none-match", H#headers.if_none_match},
-                             {"if-range", H#headers.if_range},
-                             {"if-unmodified-since", H#headers.if_unmodified_since},
-                             {"range", H#headers.range},
-                             {"referer", H#headers.referer},
-                             {"accept-ranges", H#headers.accept_ranges},
-                             {"keep-alive", H#headers.keep_alive},
-                             {"location", H#headers.location},
-                             {"content-length", H#headers.content_length},
-                             {"content-type", H#headers.content_type},
-                             {"content-encoding", H#headers.content_encoding},
-                             {"authorization", H#headers.authorization},
-                             {"transfer-encoding", H#headers.transfer_encoding}]).
+    FixedAuth =
+	case H#headers.authorization of
+	    undefined ->
+		undefined;
+	    {_Username, _Password, Auth} ->
+		Auth
+	end,
+    Headers = [{"Connection", H#headers.connection},
+	       {"If-Match", H#headers.if_match},
+	       {"If-None-match", H#headers.if_none_match},
+	       {"If-Range", H#headers.if_range},
+	       {"If-Unmodified-Since", H#headers.if_unmodified_since},
+	       {"Range", H#headers.range},
+	       {"Referer", H#headers.referer},
+	       {"Accept-Ranges", H#headers.accept_ranges},
+	       {"Keep-Alive", H#headers.keep_alive},
+	       {"Location", H#headers.location},
+	       {"Content-Length", H#headers.content_length},
+	       {"Content-Type", H#headers.content_type},
+	       {"Content-Encoding", H#headers.content_encoding},
+	       {"Authorization", FixedAuth},
+	       {"Transfer-Encoding", H#headers.transfer_encoding}],
+    DefinedHeaders = [{K,V} || {K,V} <- Headers, V /= undefined],
+    lists:foldl(fun({K0, V0}, DAcc) ->
+			{K, V} = ewgi_api:normalize_header({K0, V0}),
+                        gb_trees:insert(K, [{K0, V}], DAcc)
+                end, Dict0, DefinedHeaders).
 
 %% Final callback after entire input has been read
 read_input(Callback, {Length, _ChunkSz}, _Left) when is_function(Callback), Length =< 0 ->

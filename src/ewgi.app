@@ -5,7 +5,9 @@
   ,{env, []}
   ,{modules, [ewgi_api
               ,ewgi_application
+	      ,ewgi_inets
               ,ewgi_mochiweb
+	      ,ewgi_testapp
               ,ewgi_yaws
              ]}
  ]}.

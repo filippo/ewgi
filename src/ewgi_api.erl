@@ -232,12 +232,17 @@ get_header1("x-http-method-override", Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
     ?GET_HTTP_X_HTTP_METHOD_OVERRIDE(headers(Ctx));
 get_header1(Hdr, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
     case gb_trees:lookup(Hdr, ?GET_HTTP_OTHER(headers(Ctx))) of
-        {value, V} when is_list(V) ->
-            {_, V1} = lists:unzip(V),
-            string:join(V1, ", ");
+        {value, V} ->
+	    unzip_header_value(V);
         none ->
             undefined
     end.
+
+unzip_header_value([{_,_}|_]=V) ->
+	{_, V1} = lists:unzip(V),
+	string:join(V1, ", ");
+unzip_header_value(V) ->	
+	V.
 
 insert_header(K0, V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
     K = string:to_lower(K0),
@@ -350,7 +355,7 @@ server_software(V, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
 get_all_headers(Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
     H = headers(Ctx),
     Other = gb_trees:to_list(?GET_HTTP_OTHER(H)),
-    Acc = [{K, string:join(V, ", ")} || {K, {_, V}} <- [{K0, lists:unzip(V0)} || {K0, V0} <- Other, is_list(V0)]],
+    Acc = [{K, unzip_header_value(V)} || {K, V} <- Other],
     L = [{"accept", get_header_value("accept", Ctx)},
          {"cookie", get_header_value("cookie", Ctx)},
          {"host", get_header_value("host", Ctx)},
