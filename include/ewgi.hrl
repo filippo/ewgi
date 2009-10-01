@@ -224,10 +224,12 @@
 -define(INSPECT_EWGI_RESPONSE(Ctx),
 	begin
 	    error_logger:info_msg("Inpecting the final ewgi_response()...~n"
+				  "Requested Url: ~p~n"
 				  "Status: ~p~n"
 				  "Headers: ~p~n"
 				  "Body: ~p~n",
-				  [ewgi_api:response_status(Ctx),
+				  [ewgi_api:path_info(Ctx),
+				   ewgi_api:response_status(Ctx),
 				   ewgi_api:response_headers(Ctx),
 				   ewgi_api:response_message_body(Ctx)]),
 	    Ctx
