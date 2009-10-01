@@ -77,7 +77,7 @@ empty_request() ->
 
 -spec empty_response() -> ewgi_response().
 empty_response() ->
-    {'ewgi_response', undefined, [], undefined, undefined}.
+    {'ewgi_response', undefined, [], [], undefined}.
 
 -spec context(ewgi_request(), ewgi_response()) -> ewgi_context().
 context(Request, Response) when ?IS_EWGI_REQUEST(Request),
