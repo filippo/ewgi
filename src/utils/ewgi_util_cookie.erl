@@ -159,7 +159,7 @@ remove_cookie_headers(CookieName, [{"Set-Cookie", [CookieName|_]}|R], Acc) ->
 remove_cookie_headers(CookieName, [H|R], Acc) ->
     remove_cookie_headers(CookieName, R, [H|Acc]).
 
--spec simple_cookie(string(), string() | binary(), bool()) -> {string(), iolist()}.
+-spec simple_cookie(string(), string() | binary(), boolean()) -> {string(), iolist()}.
 simple_cookie(Name, Val, Sec) when is_binary(Val) ->
     simple_cookie(Name, binary_to_list(Val), Sec);
 simple_cookie(Name, Val, Sec) when is_list(Name), is_list(Val) ->
@@ -167,7 +167,7 @@ simple_cookie(Name, Val, Sec) when is_list(Name), is_list(Val) ->
     Exp = case Val of [] -> ?COOKIE_DELETE_TRAILER; _ -> [] end,
     {"Set-Cookie", [Name, $=, Val, "; Path=/", S, Exp]}.
 
--spec simple_cookie(string(), binary() | string(), bool(), binary() | string()) -> {string(), iolist()}.
+-spec simple_cookie(string(), binary() | string(), boolean(), binary() | string()) -> {string(), iolist()}.
 simple_cookie(Name, Val, Sec, Domain) when is_binary(Val) ->
     simple_cookie(Name, binary_to_list(Val), Sec, Domain);
 simple_cookie(Name, Val, Sec, Domain) when is_binary(Domain) ->
