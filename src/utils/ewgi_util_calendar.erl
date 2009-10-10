@@ -26,24 +26,24 @@
 now_to_unix_ts() ->
     now_to_unix_ts(calendar:now_to_universal_time(erlang:now())).
 
-%% @spec now_to_unix_ts(t_datetime1970()) -> integer()
+%% @spec now_to_unix_ts(calendar:t_datetime1970()) -> integer()
 %% @doc Gives the UNIX timestamp for the corresponding time value.
--spec now_to_unix_ts(t_datetime1970()) -> non_neg_integer().
+-spec now_to_unix_ts(calendar:t_datetime1970()) -> non_neg_integer().
 now_to_unix_ts(Tm) ->
     calendar:datetime_to_gregorian_seconds(Tm) -
         calendar:datetime_to_gregorian_seconds(?UNIX_EPOCH).
 
-%% @spec now_to_unix_ts({integer(), integer(), integer()}, non_neg_integer()) -> float()
+%% @spec now_to_unix_ts(calendar:t_datetime1970(), non_neg_integer()) -> float()
 %% @doc Gives the current UNIX timestamp with fractional microseconds.
--spec now_to_unix_ts(t_datetime1970(), non_neg_integer()) -> float().
+-spec now_to_unix_ts(calendar:t_datetime1970(), non_neg_integer()) -> float().
 now_to_unix_ts(Tm, 0) ->
     now_to_unix_ts(Tm);
 now_to_unix_ts(Tm, Ms) when is_integer(Ms) ->
     now_to_unix_ts(Tm) + (Ms / 1000000).
 
-%% @spec now_utc_ms() -> {t_datetime1970(), non_neg_integer()}
+%% @spec now_utc_ms() -> {calendar:t_datetime1970(), non_neg_integer()}
 %% @doc Gives a tuple representing the current UNIX timestamp and microseconds.
--spec now_utc_ms() -> {t_datetime1970(), non_neg_integer()}.
+-spec now_utc_ms() -> {calendar:t_datetime1970(), non_neg_integer()}.
 now_utc_ms() ->
     {_, _, Ms} = Now = erlang:now(),
     {calendar:now_to_universal_time(Now), Ms}.
