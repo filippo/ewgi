@@ -13,7 +13,7 @@
 
 -module(ewgi_util_cookie).
 -export([parse_cookie/1, test/0]).
--export([cookie_headers/4, cookie_safe_encode/1, cookie_safe_decode/1, get_domains/1]).
+-export([cookie_headers/5, cookie_safe_encode/1, cookie_safe_decode/1, get_domains/1]).
 
 -include("ewgi.hrl").
 
@@ -131,12 +131,12 @@ parse_cookie_test() ->
 %%====================================================================
 %% Functions for setting the cookie headers in the ewgi_response()
 %%====================================================================
-cookie_headers(Ctx, CookieName, CookieVal, Sec) ->
+cookie_headers(Ctx, CookieName, CookieVal, Path, Sec) ->
     {CurDomain, WildDomain} = get_domains(Ctx),
     SessionHeaders =
-	[simple_cookie(CookieName, CookieVal, Sec),
-	 simple_cookie(CookieName, CookieVal, Sec, CurDomain),
-	 simple_cookie(CookieName, CookieVal, Sec, WildDomain)],
+	[simple_cookie(CookieName, CookieVal, Path, Sec),
+	 simple_cookie(CookieName, CookieVal, Path, Sec, CurDomain),
+	 simple_cookie(CookieName, CookieVal, Path, Sec, WildDomain)],
     OldHeaders = ewgi_api:response_headers(Ctx),
     Headers = SessionHeaders ++ remove_cookie_headers(CookieName, OldHeaders, []),
     ewgi_api:response_headers(Headers, Ctx).
@@ -159,23 +159,23 @@ remove_cookie_headers(CookieName, [{"Set-Cookie", [CookieName|_]}|R], Acc) ->
 remove_cookie_headers(CookieName, [H|R], Acc) ->
     remove_cookie_headers(CookieName, R, [H|Acc]).
 
--spec simple_cookie(string(), string() | binary(), boolean()) -> {string(), iolist()}.
-simple_cookie(Name, Val, Sec) when is_binary(Val) ->
-    simple_cookie(Name, binary_to_list(Val), Sec);
-simple_cookie(Name, Val, Sec) when is_list(Name), is_list(Val) ->
+-spec simple_cookie(string(), string() | binary(), string(), boolean()) -> {string(), iolist()}.
+simple_cookie(Name, Val, Path, Sec) when is_binary(Val) ->
+    simple_cookie(Name, binary_to_list(Val), Path, Sec);
+simple_cookie(Name, Val, Path, Sec) when is_list(Name), is_list(Val), is_list(Path) ->
     S = if Sec -> "; Secure"; true -> [] end,
     Exp = case Val of [] -> ?COOKIE_DELETE_TRAILER; _ -> [] end,
-    {"Set-Cookie", [Name, $=, Val, "; Path=/", S, Exp]}.
+    {"Set-Cookie", [Name, $=, Val, "; Path=", Path, S, Exp]}.
 
--spec simple_cookie(string(), binary() | string(), boolean(), binary() | string()) -> {string(), iolist()}.
-simple_cookie(Name, Val, Sec, Domain) when is_binary(Val) ->
-    simple_cookie(Name, binary_to_list(Val), Sec, Domain);
-simple_cookie(Name, Val, Sec, Domain) when is_binary(Domain) ->
-    simple_cookie(Name, Val, Sec, binary_to_list(Domain));
-simple_cookie(Name, Val, Sec, Domain) ->
+-spec simple_cookie(string(), binary() | string(), boolean(), binary() | string(), string()) -> {string(), iolist()}.
+simple_cookie(Name, Val, Path, Sec, Domain) when is_binary(Val) ->
+    simple_cookie(Name, binary_to_list(Val), Path, Sec, Domain);
+simple_cookie(Name, Val, Path, Sec, Domain) when is_binary(Domain) ->
+    simple_cookie(Name, Val, Path, Sec, binary_to_list(Domain));
+simple_cookie(Name, Val, Path, Sec, Domain) ->
     S = if Sec -> "; Secure"; true -> [] end,
     Exp = case Val of [] -> ?COOKIE_DELETE_TRAILER; _ -> [] end,
-    {"Set-Cookie", io_lib:format("~s=~s; Path=/; Domain=~s~s~s", [Name, Val, Domain, S, Exp])}.
+    {"Set-Cookie", io_lib:format("~s=~s; Path=~s; Domain=~s~s~s", [Name, Val, Path, Domain, S, Exp])}.
 
 
 -spec cookie_safe_encode(binary()) -> binary().

@@ -19,7 +19,7 @@
 %% Usage examples
 -export([create_example/1, delete_example/1]).
 
--import(ewgi_util_cookie, [cookie_headers/4, cookie_safe_encode/1, cookie_safe_decode/1]).
+-import(ewgi_util_cookie, [cookie_headers/5, cookie_safe_encode/1, cookie_safe_decode/1]).
 
 -include("ewgi.hrl").
 
@@ -31,7 +31,7 @@
 %% Session Store API
 %%====================================================================
 -spec load_session(ewgi_context(), list()) -> ewgi_context().
-load_session(Ctx, [CookieName, _SecureCookie, Timeout, IncludeIp, Key]=Args) ->
+load_session(Ctx, [CookieName, _CookiePath, _SecureCookie, Timeout, IncludeIp, Key]=Args) ->
     case ewgi_api:get_header_value("cookie", Ctx) of
 	undefined ->
 	    ewgi_session:new_session(Ctx);
@@ -59,7 +59,7 @@ load_session(Ctx, [CookieName, _SecureCookie, Timeout, IncludeIp, Key]=Args) ->
     end.
 
 -spec store_session(ewgi_context(), list()) -> ewgi_context().
-store_session(Ctx, [CookieName, SecureCookie, _Timeout, IncludeIp, Key]) ->
+store_session(Ctx, [CookieName, CookiePath, SecureCookie, _Timeout, IncludeIp, Key]) ->
     Updated = ewgi_session:session_updated(Ctx),
     if Updated ->
 	    Session = ewgi_session:get_session(Ctx, IncludeIp),
@@ -69,24 +69,26 @@ store_session(Ctx, [CookieName, SecureCookie, _Timeout, IncludeIp, Key]) ->
 		    Ctx;
 		EncryptedVal ->
 		    CookieVal = cookie_safe_encode(EncryptedVal),
-		    cookie_headers(Ctx, CookieName, CookieVal, SecureCookie)
+		    cookie_headers(Ctx, CookieName, CookieVal, CookiePath, SecureCookie)
 	    end;
        true -> %% nothing to do!
 	    Ctx
     end.
 
-delete_session(Ctx,  [CookieName, SecureCookie, _Timeout, _IncludeIp, _Key]) ->
-    cookie_headers(Ctx, CookieName, [], SecureCookie).
+delete_session(Ctx,  [CookieName, CookiePath, SecureCookie, _Timeout, _IncludeIp, _Key]) ->
+    cookie_headers(Ctx, CookieName, [], CookiePath, SecureCookie).
 
 %%====================================================================
 %% example functions on how to use the session middleware
 %%====================================================================
 -define(COOKIE_SIGNING_KEY, <<"ABCDEFGHIJKLMNOP">>).
+-define(COOKIE_PATH, "/").
 -define(SECURE_COOKIE, false).
 -define(INCLUDE_IP, true).
 -define(SESSION_TIMEOUT, 15 * 60 * 1000). %% 15 minutes
 -define(COOKIE_STORE_ARGS, [
 			    "cookie_session_id",
+				?COOKIE_PATH,
 			    ?SECURE_COOKIE,
 			    ?SESSION_TIMEOUT,
 			    ?INCLUDE_IP,

@@ -25,7 +25,7 @@
 %% Usage examples
 -export([create_example/1, delete_example/1]).
 
--import(ewgi_util_cookie, [cookie_headers/4, cookie_safe_encode/1, cookie_safe_decode/1]).
+-import(ewgi_util_cookie, [cookie_headers/5, cookie_safe_encode/1, cookie_safe_decode/1]).
 
 -include("ewgi.hrl").
 
@@ -35,7 +35,7 @@
 %%====================================================================
 %% Session Store API
 %%====================================================================
-load_session(Ctx, [ServerId, CookieName, _SecureCookie, Timeout, IncludeIp] = StoreArgs) ->
+load_session(Ctx, [ServerId, CookieName, _CookiePath, _SecureCookie, Timeout, IncludeIp] = StoreArgs) ->
     case ewgi_api:get_header_value("cookie", Ctx) of
 	undefined ->
 	    ewgi_session2:new_session(Ctx);
@@ -69,7 +69,7 @@ load_session(Ctx, [ServerId, CookieName, _SecureCookie, Timeout, IncludeIp] = St
 	    end
     end.
 
-store_session(Ctx, [ServerId, CookieName, SecureCookie, _Timeout, IncludeIp]) ->
+store_session(Ctx, [ServerId, CookieName, CookiePath, SecureCookie, _Timeout, IncludeIp]) ->
     Sid = ewgi_api:find_data(?SESSION_ID, Ctx),
     case Sid of
 	undefined ->
@@ -77,7 +77,7 @@ store_session(Ctx, [ServerId, CookieName, SecureCookie, _Timeout, IncludeIp]) ->
 	    Session = ewgi_session:get_session(Ctx, IncludeIp),
 	    NewId = ?SESSION_SERVER_MODULE:save_new_session(ServerId, Session),
 	    SidB64 = cookie_safe_encode(term_to_binary(NewId)),
-	    cookie_headers(Ctx, CookieName, SidB64, SecureCookie);
+	    cookie_headers(Ctx, CookieName, SidB64, CookiePath, SecureCookie);
 	Sid ->
 	    %% existing session
 	    Updated = ewgi_session:session_updated(Ctx),
@@ -89,26 +89,28 @@ store_session(Ctx, [ServerId, CookieName, SecureCookie, _Timeout, IncludeIp]) ->
 	    Ctx
     end.
 
-delete_session(Ctx, [ServerId, CookieName, SecureCookie]) ->
+delete_session(Ctx, [ServerId, CookieName, CookiePath, SecureCookie]) ->
     Sid = ewgi_api:find_data(?SESSION_ID, Ctx),
     case Sid of
 	undefined -> ok;
 	_ -> ?SESSION_SERVER_MODULE:delete_session(ServerId, Sid)
     end,
     Ctx1 = ewgi_api:store_data(?SESSION_ID, undefined, Ctx),
-    cookie_headers(Ctx1, CookieName, [], SecureCookie).
+    cookie_headers(Ctx1, CookieName, [], CookiePath, SecureCookie).
 
 %%====================================================================
 %% example functions on how to use the session middleware
 %%====================================================================
 %% The server reference :: Pid | LocalName | {Node,Name} | {global,Name}
 -define(SESSION_SERVER_REF, ewgi_session_server).
+-define(COOKIE_PATH, "/").
 -define(SECURE_COOKIE, false).
 -define(INCLUDE_IP, true).
 -define(SESSION_TIMEOUT, 15 * 60 * 1000). %% 15 minutes
 -define(SESSION_STORE_ARGS, [
 			     ?SESSION_SERVER_REF,
 			     "server_session_id",
+				 ?COOKIE_PATH,
 			     ?SECURE_COOKIE,
 			     ?SESSION_TIMEOUT,
 			     ?INCLUDE_IP
