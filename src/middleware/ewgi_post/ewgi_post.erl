@@ -50,20 +50,27 @@ post_parse_middleware(MaxLength, App, ErrApp)
 %% Should look like "major/minor; var=val"
 parse_ct(L) when is_list(L) ->
     case string:tokens(L, ";") of
-        [H|_] ->
-            H;
+        [CT|Vars] ->
+			Vars1 = [string:tokens(VarStr, "=") || VarStr <- Vars],
+			Vars2 = [{string:strip(Name), Value} || [Name, Value] <- Vars1],
+			%% http://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html ->
+			%% When no explicit charset parameter is provided by the sender,
+			%% media subtypes of the "text" type are defined to have a default
+			%% charset value of "ISO-8859-1" when received via HTTP.
+			Charset = proplists:get_value("charset", Vars2, "ISO-8859-1"),
+            {CT, Charset};
         _ ->
             undefined
     end.
 
-parse_post(Ctx, App, ErrApp, "application/x-www-form-urlencoded", Max) ->
+parse_post(Ctx, App, ErrApp, {"application/x-www-form-urlencoded", Charset}, Max) ->
     case ewgi_api:content_length(Ctx) of
         L when is_integer(L), L > Max ->
 			%% shouldn't we set an error message here?
             ErrApp(Ctx);
         L when is_integer(L), L > 0 ->
             Input = read_input_string(Ctx, L),
-            Vals = ewgi_api:parse_post(Input),
+            Vals = ewgi_api:parse_post(Input, Charset),
             Ctx1 = ewgi_api:remote_user_data(Vals, Ctx),
             App(Ctx1);
         _ ->
