@@ -61,8 +61,8 @@
 -export([server_request_foldl/4]).
 
 %% Utility methods
--export([parse_qs/1, parse_post/1, urlencode/1, quote/1, normalize_header/1,
-         unquote_path/1, path_components/3, urlsplit/1]).
+-export([parse_qs/1, parse_post/1, parse_post/2, urlencode/1, quote/1,
+         normalize_header/1, unquote_path/1, path_components/3, urlsplit/1]).
 
 %%====================================================================
 %% API
@@ -77,7 +77,7 @@ empty_request() ->
 
 -spec empty_response() -> ewgi_response().
 empty_response() ->
-    {'ewgi_response', undefined, [], undefined, undefined}.
+    {'ewgi_response', undefined, [], [], undefined}.
 
 -spec context(ewgi_request(), ewgi_response()) -> ewgi_context().
 context(Request, Response) when ?IS_EWGI_REQUEST(Request),
@@ -444,7 +444,7 @@ store_data(Key, Val, Ctx) when ?IS_EWGI_CONTEXT(Ctx) ->
 %% @end
 %%--------------------------------------------------------------------
 parse_qs(ToParse) ->
-    parse_data(ToParse).
+    parse_data(ToParse, "ISO-8859-1").
 
 %%--------------------------------------------------------------------
 %% @spec parse_post(string()|binary()) -> [proplist()]
@@ -454,7 +454,17 @@ parse_qs(ToParse) ->
 %% @end
 %%--------------------------------------------------------------------
 parse_post(ToParse) ->
-    parse_data(ToParse).
+    parse_data(ToParse, "ISO-8859-1").
+
+%%--------------------------------------------------------------------
+%% @spec parse_post(string()|binary(), InEncoding) -> [proplist()]
+%%
+%% @doc Parse application/x-www-form-urlencoded data. 
+%% Calls parse_data to do the job.
+%% @end
+%%--------------------------------------------------------------------
+parse_post(ToParse, InEncoding) ->
+    parse_data(ToParse, InEncoding).
 
 %%--------------------------------------------------------------------
 %% @spec parse_data(string()|binary()) -> [proplist()]
@@ -462,18 +472,25 @@ parse_post(ToParse) ->
 %% @doc Parse a query string or application/x-www-form-urlencoded data.
 %% @end
 %%--------------------------------------------------------------------
-parse_data(undefined) ->
+parse_data(undefined, _InEncoding) ->
     [];
-parse_data(Binary) when is_binary(Binary) ->
-    parse_data(binary_to_list(Binary), []);
-parse_data(String) ->
-    parse_data(String, []).
+parse_data(Data, InEncoding) ->
+	UTFData = unicode_data(Data, string:to_lower(InEncoding)),
+    kv_data(UTFData, []).
 
-parse_data([], Acc) ->
+unicode_data(Data, "iso-8859-1") ->
+	unicode:characters_to_list(Data, latin1);
+unicode_data(Data, "utf8") ->
+	unicode:characters_to_list(Data, utf8);
+unicode_data(Data, "utf-8") ->
+	unicode:characters_to_list(Data, utf8).
+%% TODO: add support for more charsets
+	
+kv_data([], Acc) ->
     lists:reverse(Acc);
-parse_data(String, Acc) ->
+kv_data(String, Acc) ->
     {{Key, Val}, Rest} = parse_kv(String),
-    parse_data(Rest, [{Key, Val} | Acc]).
+    kv_data(Rest, [{Key, Val} | Acc]).
 
 
 %%--------------------------------------------------------------------
@@ -597,24 +614,24 @@ until(P, String, Parsed) ->
     end.
 
 %%--------------------------------------------------------------------
-%% @spec is_equal(string()) -> bool()
+%% @spec is_equal(string()) -> boolean()
 %%
 %% @doc Match = character at the head of string.
 %% @end
 %%--------------------------------------------------------------------
--spec is_equal(string()) -> bool().
+-spec is_equal(string()) -> boolean().
 is_equal([$=|Rest]) ->
     {true, Rest};
 is_equal(_) ->
     false.
 
 %%--------------------------------------------------------------------
-%% @spec is_amp(string()) -> bool()
+%% @spec is_amp(string()) -> boolean()
 %%
 %% @doc Match &amp; character or &amp;amp; entity at the beginning of string.
 %% @end
 %%--------------------------------------------------------------------
--spec is_amp(string()) -> bool().
+-spec is_amp(string()) -> boolean().
 is_amp("&amp;"++Rest) ->
     {true, Rest};
 is_amp([$&|Rest]) ->
