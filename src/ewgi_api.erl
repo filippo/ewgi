@@ -64,6 +64,15 @@
 -export([parse_qs/1, parse_post/1, parse_post/2, urlencode/1, quote/1,
          normalize_header/1, unquote_path/1, path_components/3, urlsplit/1]).
 
+%% Stream methods
+-export([
+		stream_process_init/0,
+		stream_process_deliver/2,
+		stream_process_deliver_chunk/2,
+		stream_process_deliver_final_chunk/2,
+		stream_process_end/1
+	]).
+
 %%====================================================================
 %% API
 %%====================================================================
@@ -864,3 +873,40 @@ urlsplit_query("#" ++ Rest, Acc) ->
     {lists:reverse(Acc), Rest};
 urlsplit_query([C | Rest], Acc) ->
     urlsplit_query(Rest, [C | Acc]).
+
+%%--------------------------------------------------------------------
+%% Stream methods
+%%--------------------------------------------------------------------
+-define(STREAM_INIT_TIMEOUT, 5000).
+stream_process_init() ->
+	receive
+	{push_stream_data, ServerModule, Socket} ->
+		receive
+		{ok, ServerPid} ->
+			Connection = {ServerModule, ServerPid, Socket},
+			{ok, Connection};
+		{discard, ServerPid} ->
+			Connection = {ServerModule, ServerPid, Socket},
+			stream_process_end(Connection),
+			discard
+		end
+	after ?STREAM_INIT_TIMEOUT ->
+		error_logger:error_msg(?MODULE_STRING ++": Timeout while trying to init stream process!~n"),
+		discard
+	end.
+
+stream_process_deliver({ServerModule, _ServerPid, Socket}, IoList) ->
+	A = ServerModule:new(undefined),
+	A:stream_process_deliver(Socket, IoList).
+
+stream_process_deliver_chunk({ServerModule, _ServerPid, Socket}, IoList) ->
+	A = ServerModule:new(undefined),
+	A:stream_process_deliver_chunk(Socket, IoList).
+
+stream_process_deliver_final_chunk({ServerModule, _ServerPid, Socket}, IoList) ->
+    A = ServerModule:new(undefined),
+    A:stream_process_deliver_final_chunk(Socket, IoList).
+
+stream_process_end({ServerModule, ServerPid, Socket}) ->
+    A = ServerModule:new(undefined),
+    A:stream_process_end(ServerPid, Socket).

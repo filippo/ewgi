@@ -26,12 +26,30 @@
 -module(ewgi_yaws, [Appl]).
 
 -export([run/1]).
+-export([
+		stream_process_deliver/2,
+		stream_process_deliver_chunk/2,
+		stream_process_deliver_final_chunk/2,
+		stream_process_end/2
+	]).
 
 -include_lib("yaws_api.hrl").
 -include_lib("ewgi.hrl").
 
 -define(INTERNAL_ERROR, [{status, 500}, {content, "text/plain", <<"Internal Server Error">>}]).
 -define(BAD_REQUEST, [{status, 400}, {content, "text/plain", <<"Bad Request">>}]).
+
+stream_process_deliver(Socket, IoList) ->
+	yaws_api:stream_process_deliver(Socket, IoList).
+
+stream_process_deliver_chunk(Socket, IoList) ->
+	yaws_api:stream_process_deliver_chunk(Socket, IoList).
+
+stream_process_deliver_final_chunk(Socket, IoList) ->
+	yaws_api:stream_process_deliver_final_chunk(Socket, IoList).
+
+stream_process_end(YawsPid, Socket) ->
+    yaws_api:stream_process_end(Socket, YawsPid).
 
 %%====================================================================
 %% ewgi_server callbacks
@@ -42,7 +60,7 @@ run(Arg) ->
             Ctx0 = ewgi_api:context(Req, ewgi_api:empty_response()),
             try Appl(Ctx0) of
                 Ctx when ?IS_EWGI_CONTEXT(Ctx) ->
-                    handle_result(?INSPECT_EWGI_RESPONSE(Ctx))
+                    handle_result(?INSPECT_EWGI_RESPONSE(Ctx), Arg#arg.clisock)
             catch
                 _:Reason ->
                     error_logger:error_report(Reason),
@@ -54,16 +72,19 @@ run(Arg) ->
             ?BAD_REQUEST
     end.
 
-handle_result(Ctx) ->
+handle_result(Ctx, Socket) ->
     {Code, _} = ewgi_api:response_status(Ctx),
     H = ewgi_api:response_headers(Ctx),
     ContentType = get_content_type(H),
     Acc = get_yaws_headers(H),
     case ewgi_api:response_message_body(Ctx) of
+	PushStream when is_pid(PushStream) ->
+	    PushStream ! {push_stream_data, ?MODULE, Socket},
+	    [{status, Code}, {streamcontent_from_pid, ContentType, PushStream}];
 	Generator when is_function(Generator, 0) ->
 	    YawsPid = self(),
 	    spawn(fun() -> handle_stream(Generator, YawsPid) end),
-	    {streamcontent_with_timeout, ContentType, <<>>, infinity};
+	    [{status, Code}, {streamcontent_with_timeout, ContentType, <<>>, infinity}];
 	Body ->
 	    [{status, Code}, {content, ContentType, Body}|Acc]
     end.
