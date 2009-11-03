@@ -896,17 +896,13 @@ stream_process_init() ->
 	end.
 
 stream_process_deliver({ServerModule, _ServerPid, Socket}, IoList) ->
-	A = ServerModule:new(undefined),
-	A:stream_process_deliver(Socket, IoList).
+	ServerModule:stream_process_deliver(Socket, IoList).
 
 stream_process_deliver_chunk({ServerModule, _ServerPid, Socket}, IoList) ->
-	A = ServerModule:new(undefined),
-	A:stream_process_deliver_chunk(Socket, IoList).
+	ServerModule:stream_process_deliver_chunk(Socket, IoList).
 
 stream_process_deliver_final_chunk({ServerModule, _ServerPid, Socket}, IoList) ->
-    A = ServerModule:new(undefined),
-    A:stream_process_deliver_final_chunk(Socket, IoList).
+    ServerModule:stream_process_deliver_final_chunk(Socket, IoList).
 
 stream_process_end({ServerModule, ServerPid, Socket}) ->
-    A = ServerModule:new(undefined),
-    A:stream_process_end(ServerPid, Socket).
+    ServerModule:stream_process_end(ServerPid, Socket).

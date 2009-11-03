@@ -23,9 +23,9 @@
 %%%
 %%% Created : 12 Oct 2007 by Filippo Pacini <filippo.pacini@gmail.com>
 %%%-------------------------------------------------------------------
--module(ewgi_yaws, [Appl]).
+-module(ewgi_yaws).
 
--export([run/1]).
+-export([run/2]).
 -export([
 		stream_process_deliver/2,
 		stream_process_deliver_chunk/2,
@@ -54,7 +54,7 @@ stream_process_end(YawsPid, Socket) ->
 %%====================================================================
 %% ewgi_server callbacks
 %%====================================================================
-run(Arg) ->
+run(Appl, Arg) ->
     try parse_arg(Arg) of
         Req when ?IS_EWGI_REQUEST(Req) ->
             Ctx0 = ewgi_api:context(Req, ewgi_api:empty_response()),

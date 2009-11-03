@@ -23,10 +23,10 @@
 %%%
 %%% Created : 12 Oct 2007 by Filippo Pacini <filippo.pacini@gmail.com>
 %%%-------------------------------------------------------------------
--module(ewgi_mochiweb, [Appl]).
+-module(ewgi_mochiweb).
 
 %% ewgi callbacks
--export([run/1]).
+-export([run/2]).
 
 -include_lib("ewgi.hrl").
 
@@ -35,10 +35,10 @@
 %%====================================================================
 %% ewgi_server callbacks
 %%====================================================================
-run(MochiReq) ->
+run(Appl, MochiReq) ->
     try parse_arg(MochiReq) of
         Req when ?IS_EWGI_REQUEST(Req) ->
-            try process_application(ewgi_api:context(Req, ewgi_api:empty_response())) of
+            try process_application(Appl, ewgi_api:context(Req, ewgi_api:empty_response())) of
                 not_found ->
                     MochiReq:not_found();
                 Ctx when ?IS_EWGI_CONTEXT(Ctx) ->
@@ -90,10 +90,10 @@ handle_stream(R, Generator) ->
     error_logger:error_report(io_lib:format("Invalid stream generator: ~p~n", [Generator])),
     R:write_chunk([]).
 
-process_application(Ctx) when is_list(Appl) ->
+process_application(Appl, Ctx) when is_list(Appl) ->
     Path = ewgi_api:path_info(Ctx),
     process_mount_application(Ctx, Path, find_mount(Appl, Path));
-process_application(Ctx) ->
+process_application(Appl, Ctx) ->
     ewgi_application:run(Appl, Ctx).
 
 process_mount_application(_, _, {not_found, _}) ->
