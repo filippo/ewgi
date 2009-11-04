@@ -80,6 +80,23 @@ parse_post(Ctx, App, ErrApp, {"application/x-www-form-urlencoded", Vars}, Max) -
         _ ->
             ErrApp(Ctx)
     end;
+parse_post(Ctx, App, ErrApp, {"application/json", _Vars}, Max) ->
+    case ewgi_api:content_length(Ctx) of
+        L when is_integer(L), L > Max ->
+	    %% shouldn't we set an error message here?
+            ErrApp(Ctx);
+        L when is_integer(L), L > 0 ->
+	    Input = read_input_string(Ctx, L),
+	    %% http://www.ietf.org/rfc/rfc4627.txt
+	    %% JSON text SHALL be encoded in Unicode.
+	    %% The default encoding is UTF-8.
+	    case unicode:bom_to_encoding(Input) of
+		{latin1,0} -> InEncoding = utf8
+				  ;{InEncoding, _Length} -> ok
+	    end,
+	    UnicodeInput = unicode:characters_to_list(Input, InEncoding),
+            {Json, [], _} = ktj_decode:decode(UnicodeInput),
+	    Vals = [{"json", Json}],
             Ctx1 = ewgi_api:remote_user_data(Vals, Ctx),
             App(Ctx1);
         _ ->
