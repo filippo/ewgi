@@ -331,7 +331,7 @@ stream_process_deliver_chunk(Sock, IoList) ->
                 0 ->
                     stream_process_deliver_final_chunk(Sock, IoList);
                 S ->
-                    [mochihex:to_hex(S), "\r\n", IoList, "\r\n"]
+                    [http_util:integer_to_hexlist(S), "\r\n", IoList, "\r\n"]
             end,
     gen_tcp:send(Sock, Chunk).
 stream_process_deliver_final_chunk(Sock, IoList) ->
@@ -339,7 +339,7 @@ stream_process_deliver_final_chunk(Sock, IoList) ->
                 0 ->
                     <<"0\r\n\r\n">>;
                 S ->
-                    [mochihex:to_hex(S), "\r\n", IoList, "\r\n0\r\n\r\n"]
+                    [http_util:integer_to_hexlist(S), "\r\n", IoList, "\r\n0\r\n\r\n"]
             end,
     gen_tcp:send(Sock, Chunk).
 
