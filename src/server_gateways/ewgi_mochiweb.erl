@@ -27,6 +27,12 @@
 
 %% ewgi callbacks
 -export([run/2]).
+-export([
+		stream_process_deliver/2,
+		stream_process_deliver_chunk/2,
+		stream_process_deliver_final_chunk/2,
+		stream_process_end/2
+	]).
 
 -include_lib("ewgi.hrl").
 
@@ -61,6 +67,11 @@ handle_result(Ctx, Req) ->
     Body = ewgi_api:response_message_body(Ctx),
     handle_result1(Code, Headers, Body, Req).
 
+handle_result1(Code, Headers, PushStream, Req) when is_pid(PushStream) ->
+	Req:respond({Code, Headers, chunked}),
+	Socket = Req:get(socket),
+    PushStream ! {push_stream_data, ?MODULE, Socket},
+	wait_for_streamcontent_pid(Socket, PushStream);
 handle_result1(Code, Headers, F, Req) when is_function(F, 0) ->
     MochiResp = Req:respond({Code, Headers, chunked}),
     %handle_stream_result(MochiResp, (catch F()));
@@ -89,6 +100,61 @@ handle_stream(R, Generator) when is_function(Generator, 0) ->
 handle_stream(R, Generator) ->
     error_logger:error_report(io_lib:format("Invalid stream generator: ~p~n", [Generator])),
     R:write_chunk([]).
+
+%% Copied/adapted from yaws_server
+wait_for_streamcontent_pid(CliSock, ContentPid) ->
+    Ref = erlang:monitor(process, ContentPid),
+    gen_tcp:controlling_process(CliSock, ContentPid),
+    ContentPid ! {ok, self()},
+    receive
+        endofstreamcontent ->
+            erlang:demonitor(Ref),
+            %% should just use demonitor [flush] option instead?
+            receive
+                {'DOWN', Ref, _, _, _} ->
+                    ok
+            after 0 ->
+                    ok
+            end;
+        {'DOWN', Ref, _, _, _} ->
+            ok
+    end,
+    done.
+
+%%--------------------------------------------------------------------
+%% Push Streams API - copied from yaws_api
+%% We could use mochiweb's write_chunk function but that
+%% would require that we copy MochiResp around instead of
+%% just copying the socket.
+%%--------------------------------------------------------------------
+
+%% This won't work for SSL for now
+stream_process_deliver(Sock, IoList) ->
+    gen_tcp:send(Sock, IoList).
+
+%% This won't work for SSL for now either
+stream_process_deliver_chunk(Sock, IoList) ->
+    Chunk = case erlang:iolist_size(IoList) of
+                0 ->
+                    stream_process_deliver_final_chunk(Sock, IoList);
+                S ->
+                    [mochihex:to_hex(S), "\r\n", IoList, "\r\n"]
+            end,
+    gen_tcp:send(Sock, Chunk).
+stream_process_deliver_final_chunk(Sock, IoList) ->
+    Chunk = case erlang:iolist_size(IoList) of
+                0 ->
+                    <<"0\r\n\r\n">>;
+                S ->
+                    [mochihex:to_hex(S), "\r\n", IoList, "\r\n0\r\n\r\n"]
+            end,
+    gen_tcp:send(Sock, Chunk).
+
+stream_process_end(Sock, ServerPid) ->
+    gen_tcp:controlling_process(Sock, ServerPid),
+    ServerPid ! endofstreamcontent.
+
+%%--------------------------------------------------------------------
 
 process_application(Appl, Ctx) when is_list(Appl) ->
     Path = ewgi_api:path_info(Ctx),
