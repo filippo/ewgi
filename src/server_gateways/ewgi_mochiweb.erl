@@ -250,15 +250,6 @@ parse_element(remote_ident, _Req) ->
 parse_element(remote_user, _Req) ->
     undefined;
 
-parse_element(remote_user_data, Req) ->
-    case Req:get(method) of
-        M when (M=='POST') orelse (M=='PUT') ->
-            Req:recv_body(),
-            erlang:get(mochiweb_request_body);
-        _ ->
-            undefined
-    end;
-
 parse_element(request_method, Req) ->
     Req:get(method);
 
