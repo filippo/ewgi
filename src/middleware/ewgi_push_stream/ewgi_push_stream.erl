@@ -28,8 +28,9 @@ run(Ctx, [Status, CT, StreamFun]) when is_function(StreamFun, 1) ->
     run(Ctx, [Status, CT, StreamPid]);
 
 run(Ctx, [Status, ContentType, StreamPid]) when is_pid(StreamPid) ->
+	Headers = ewgi_api:response_headers(Ctx),
     ewgi_api:response_status(Status,
-			     ewgi_api:response_headers([{"Content-type", ContentType}], 
+			     ewgi_api:response_headers([{"Content-type", ContentType}|Headers], 
 						       ewgi_api:response_message_body(StreamPid, Ctx))).
 
 %%--------------------------------------------------------------------
@@ -57,7 +58,7 @@ stream_function(Generator) ->
 	    end
     end.
 
-non_chunked_stream(Ctx, Connection, 0) ->
+non_chunked_stream(_Ctx, Connection, 0) ->
     IoList = ["done"],
     ewgi_api:stream_process_deliver(Connection, IoList);
 non_chunked_stream(Ctx, Connection, Times) ->
@@ -66,7 +67,7 @@ non_chunked_stream(Ctx, Connection, Times) ->
     timer:sleep(2000),
     non_chunked_stream(Ctx, Connection, Times - 1).
 
-chunked_stream(Ctx, Connection, 0) ->
+chunked_stream(_Ctx, Connection, 0) ->
     IoList = ["done"],
     ewgi_api:stream_process_deliver_final_chunk(Connection, IoList);
 chunked_stream(Ctx, Connection, Times) ->
