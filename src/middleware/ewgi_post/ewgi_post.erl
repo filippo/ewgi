@@ -51,26 +51,35 @@ post_parse_middleware(MaxLength, App, ErrApp)
 parse_ct(L) when is_list(L) ->
     case string:tokens(L, ";") of
         [CT|Vars] ->
-			Vars1 = [string:tokens(VarStr, "=") || VarStr <- Vars],
-			Vars2 = [{string:strip(Name), Value} || [Name, Value] <- Vars1],
-			%% http://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html ->
-			%% When no explicit charset parameter is provided by the sender,
-			%% media subtypes of the "text" type are defined to have a default
-			%% charset value of "ISO-8859-1" when received via HTTP.
-			Charset = proplists:get_value("charset", Vars2, "ISO-8859-1"),
-            {CT, Charset};
+	    Vars1 = [string:tokens(VarStr, "=") || VarStr <- Vars],
+	    Vars2 = [{string:strip(Name), Value} || [Name, Value] <- Vars1],
+            {CT, Vars2};
         _ ->
             undefined
     end.
 
-parse_post(Ctx, App, ErrApp, {"application/x-www-form-urlencoded", Charset}, Max) ->
+parse_post(Ctx, App, ErrApp, {"application/x-www-form-urlencoded", Vars}, Max) ->
     case ewgi_api:content_length(Ctx) of
         L when is_integer(L), L > Max ->
-			%% shouldn't we set an error message here?
+	    %% shouldn't we set an error message here?
             ErrApp(Ctx);
         L when is_integer(L), L > 0 ->
             Input = read_input_string(Ctx, L),
-            Vals = ewgi_api:parse_post(Input, Charset),
+	    %% http://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html
+	    %% When no explicit charset parameter is provided by the sender,
+	    %% media subtypes of the "text" type are defined to have a default
+	    %% charset value of "ISO-8859-1" when received via HTTP.
+	    case proplists:get_value("charset", Vars) of
+		undefined -> InCharset = "iso-8859-1"
+				 ;Charset -> InCharset = string:to_lower(Charset)
+	    end,
+	    UnicodeInput = to_unicode(Input, InCharset),
+            Vals = ewgi_api:parse_post(UnicodeInput),
+            Ctx1 = ewgi_api:remote_user_data(Vals, Ctx),
+            App(Ctx1);
+        _ ->
+            ErrApp(Ctx)
+    end;
             Ctx1 = ewgi_api:remote_user_data(Vals, Ctx),
             App(Ctx1);
         _ ->
@@ -90,6 +99,15 @@ read_input_string_cb(Acc) ->
        ({data, B}) ->
             read_input_string_cb([B|Acc])
     end.
+
+%% Transforms the data from the given charset to unicode
+%% Todo: add support for other charset as needed.
+to_unicode(Data, "iso-8859-1") ->
+    unicode:characters_to_list(Data, latin1);
+to_unicode(Data, "utf8") ->
+    unicode:characters_to_list(Data, utf8);
+to_unicode(Data, "utf-8") ->
+    unicode:characters_to_list(Data, utf8).
 
 %% 
 %% example functions on how to use the post handling middleware
@@ -113,7 +131,7 @@ display_form_data({ewgi_context, Request, _Response}=Ctx) ->
 	    Body1 ->
 		io_lib:format("~p", [Body1])
 	end,
-    ResponseHeaders = [{"Content-type", "text/plain"}],
+    ResponseHeaders = [{"Content-type", "text/html; charset=utf8"}],
     Response = {ewgi_response, 
                 {200, "OK"}, 
                 ResponseHeaders,
