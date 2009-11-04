@@ -888,4 +888,4 @@ stream_process_deliver_final_chunk({ServerModule, _ServerPid, Socket}, IoList) -
     ServerModule:stream_process_deliver_final_chunk(Socket, IoList).
 
 stream_process_end({ServerModule, ServerPid, Socket}) ->
-    ServerModule:stream_process_end(ServerPid, Socket).
+    ServerModule:stream_process_end(Socket, ServerPid).

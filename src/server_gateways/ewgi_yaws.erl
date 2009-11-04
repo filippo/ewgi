@@ -39,18 +39,6 @@
 -define(INTERNAL_ERROR, [{status, 500}, {content, "text/plain", <<"Internal Server Error">>}]).
 -define(BAD_REQUEST, [{status, 400}, {content, "text/plain", <<"Bad Request">>}]).
 
-stream_process_deliver(Socket, IoList) ->
-	yaws_api:stream_process_deliver(Socket, IoList).
-
-stream_process_deliver_chunk(Socket, IoList) ->
-	yaws_api:stream_process_deliver_chunk(Socket, IoList).
-
-stream_process_deliver_final_chunk(Socket, IoList) ->
-	yaws_api:stream_process_deliver_final_chunk(Socket, IoList).
-
-stream_process_end(YawsPid, Socket) ->
-    yaws_api:stream_process_end(Socket, YawsPid).
-
 %%====================================================================
 %% ewgi_server callbacks
 %%====================================================================
@@ -129,6 +117,20 @@ handle_stream(Generator, YawsPid) ->
     error_logger:error_report(io_lib:format("Invalid stream generator: ~p~n", [Generator])),
     yaws_api:stream_chunk_end(YawsPid).
 
+%%--------------------------------------------------------------------
+%% Push Streams API
+%%--------------------------------------------------------------------
+stream_process_deliver(Socket, IoList) ->
+	yaws_api:stream_process_deliver(Socket, IoList).
+
+stream_process_deliver_chunk(Socket, IoList) ->
+	yaws_api:stream_process_deliver_chunk(Socket, IoList).
+
+stream_process_deliver_final_chunk(Socket, IoList) ->
+	yaws_api:stream_process_deliver_final_chunk(Socket, IoList).
+
+stream_process_end(Socket, ServerPid) ->
+    yaws_api:stream_process_end(Socket, ServerPid).
 
 %%--------------------------------------------------------------------
 %%% Internal functions
