@@ -304,6 +304,7 @@ wait_for_streamcontent_pid(CliSock, ContentPid) ->
     ContentPid ! {ok, self()},
     receive
         endofstreamcontent ->
+	    ok = gen_tcp:close(CliSock),
             erlang:demonitor(Ref),
             %% should just use demonitor [flush] option instead?
             receive
