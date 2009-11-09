@@ -62,22 +62,49 @@ run(Appl, MochiReq) ->
 
 %% Chunked response if a nullary function is returned
 handle_result(Ctx, Req) ->
-    {Code, _} = ewgi_api:response_status(Ctx),
-    Headers = ewgi_api:response_headers(Ctx),
-    Body = ewgi_api:response_message_body(Ctx),
-    handle_result1(Code, Headers, Body, Req).
+	case ewgi_api:response_message_body(Ctx) of
+		{push_stream, GeneratorPid, Timeout} when is_pid(GeneratorPid) ->
+			handle_push_stream(Ctx, Req, GeneratorPid, Timeout);
+		Body ->
+			{Code, _} = ewgi_api:response_status(Ctx),
+			Headers = ewgi_api:response_headers(Ctx),
+			handle_result1(Code, Headers, Body, Req)
+	end.
 
-handle_result1(Code, Headers, PushStream, Req) when is_pid(PushStream) ->
-	Req:respond({Code, Headers, chunked}),
-	Socket = Req:get(socket),
-    PushStream ! {push_stream_data, ?MODULE, Socket},
-	wait_for_streamcontent_pid(Socket, PushStream);
 handle_result1(Code, Headers, F, Req) when is_function(F, 0) ->
     MochiResp = Req:respond({Code, Headers, chunked}),
     %handle_stream_result(MochiResp, (catch F()));
     handle_stream(MochiResp, F);
 handle_result1(Code, Headers, L, Req) ->
     Req:respond({Code, Headers, L}).
+
+handle_push_stream(Ctx, Req, GeneratorPid, Timeout) ->
+	Socket = Req:get(socket),
+	GeneratorPid ! {push_stream_init, ?MODULE, self(), Socket},
+	receive
+	{push_stream_init, GeneratorPid, Code, Headers, TransferEncoding} ->
+		case TransferEncoding of
+			chunked ->
+				Req:respond({Code, Headers, chunked}),
+				GeneratorPid ! {ok, self()}
+			;_ ->
+				%% mochiweb_request:respond/1 expects the full body in order to
+				%% count the content-length but we already have that. What we're
+				%% missing is the [to-be-sent] body.
+				HResponse = mochiweb_headers:make(Headers),
+				Req:start_response({Code, HResponse}),
+				%% WARNING: we're depending on the original ewgi_context here!!!!
+				case ewgi_api:request_method(Ctx) of
+					'HEAD' ->
+						GeneratorPid ! {discard, self()};
+					_ ->
+						GeneratorPid ! {ok, self()}
+				end
+		end,
+		wait_for_streamcontent_pid(Socket, GeneratorPid)
+	after Timeout ->
+		Req:respond({504, [], <<"Gateway Timeout">>})
+	end.
 
 %% Treat a stream with chunked transfer encoding
 handle_stream(R, Generator) when is_function(Generator, 0) ->

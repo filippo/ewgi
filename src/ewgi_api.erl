@@ -66,11 +66,12 @@
 
 %% Stream methods
 -export([
-		stream_process_init/0,
-		stream_process_deliver/2,
-		stream_process_deliver_chunk/2,
-		stream_process_deliver_final_chunk/2,
-		stream_process_end/1
+	 stream_process_init/2,
+	 stream_process_init/3,
+	 stream_process_deliver/2,
+	 stream_process_deliver_chunk/2,
+	 stream_process_deliver_final_chunk/2,
+	 stream_process_end/1
 	]).
 
 %%====================================================================
@@ -860,32 +861,58 @@ urlsplit_query([C | Rest], Acc) ->
 %%--------------------------------------------------------------------
 %% Stream methods
 %%--------------------------------------------------------------------
+%% chunked response
+stream_process_init(Ctx, chunked) when ?IS_EWGI_CONTEXT(Ctx) ->
+    {StatusCode, _} = ewgi_api:response_status(Ctx),
+    Headers = ewgi_api:response_headers(Ctx),
+    ChunkedHeader = {"Transfer-Encoding", "chunked"},
+    wait_for_socket(StatusCode, [ChunkedHeader|Headers], chunked);
+
+%% non chunked response
+stream_process_init(Ctx, CL) when ?IS_EWGI_CONTEXT(Ctx), is_integer(CL) ->
+    {StatusCode, _} = ewgi_api:response_status(Ctx),
+    Headers = ewgi_api:response_headers(Ctx),
+    CLHeader = {"Content-Length", integer_to_list(CL)},
+    wait_for_socket(StatusCode, [CLHeader|Headers], non_chunked).
+
+%% This API is for processes that don't have access the original ewgi_context()
+stream_process_init(StatusCode, Headers, chunked) ->
+    ChunkedHeader = {"Transfer-Encoding", "chunked"},
+    wait_for_socket(StatusCode, [ChunkedHeader|Headers], chunked);
+stream_process_init(StatusCode, Headers, CL) when is_integer(CL) ->
+    CLHeader = {"Content-Length", integer_to_list(CL)},
+    wait_for_socket(StatusCode, [CLHeader|Headers], non_chunked).
+
 -define(STREAM_INIT_TIMEOUT, 5000).
-stream_process_init() ->
-	receive
-	{push_stream_data, ServerModule, Socket} ->
-		receive
+
+wait_for_socket(StatusCode, Headers, TransferEncoding) ->
+    receive
+	{push_stream_init, ServerModule, ServerPid, Socket} ->
+	    ServerPid ! {push_stream_init, self(), StatusCode, Headers, TransferEncoding},
+	    Connection = {ServerModule, ServerPid, Socket},
+	    %% The server should report back on whether we should send data.
+	    %% Sometimes (Method='HEAD') only the headers are sent.
+	    receive
 		{ok, ServerPid} ->
-			Connection = {ServerModule, ServerPid, Socket},
-			{ok, Connection};
+		    {ok, Connection};
 		{discard, ServerPid} ->
-			Connection = {ServerModule, ServerPid, Socket},
-			stream_process_end(Connection),
-			discard
-		end
-	after ?STREAM_INIT_TIMEOUT ->
-		error_logger:error_msg(?MODULE_STRING ++": Timeout while trying to init stream process!~n"),
-		discard
-	end.
+		    stream_process_end(Connection),
+		    discard
+	    end
+    after ?STREAM_INIT_TIMEOUT ->
+	    error_logger:error_msg(?MODULE_STRING ++": Timeout while trying to init stream process!~n"),
+	    discard
+    end.
 
 stream_process_deliver({ServerModule, _ServerPid, Socket}, IoList) ->
-	ServerModule:stream_process_deliver(Socket, IoList).
+    ServerModule:stream_process_deliver(Socket, IoList).
 
 stream_process_deliver_chunk({ServerModule, _ServerPid, Socket}, IoList) ->
-	ServerModule:stream_process_deliver_chunk(Socket, IoList).
+    ServerModule:stream_process_deliver_chunk(Socket, IoList).
 
 stream_process_deliver_final_chunk({ServerModule, _ServerPid, Socket}, IoList) ->
     ServerModule:stream_process_deliver_final_chunk(Socket, IoList).
 
 stream_process_end({ServerModule, ServerPid, Socket}) ->
     ServerModule:stream_process_end(Socket, ServerPid).
+:

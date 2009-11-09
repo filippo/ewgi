@@ -27,10 +27,10 @@
 
 -export([run/2]).
 -export([
-		stream_process_deliver/2,
-		stream_process_deliver_chunk/2,
-		stream_process_deliver_final_chunk/2,
-		stream_process_end/2
+	 stream_process_deliver/2,
+	 stream_process_deliver_chunk/2,
+	 stream_process_deliver_final_chunk/2,
+	 stream_process_end/2
 	]).
 
 -include_lib("yaws_api.hrl").
@@ -61,26 +61,36 @@ run(Appl, Arg) ->
     end.
 
 handle_result(Ctx, Socket) ->
-    {Code, _} = ewgi_api:response_status(Ctx),
-    H = ewgi_api:response_headers(Ctx),
-    ContentType = get_content_type(H),
-    Acc = get_yaws_headers(H),
     case ewgi_api:response_message_body(Ctx) of
-	PushStream when is_pid(PushStream) ->
-	    PushStream ! {push_stream_data, ?MODULE, Socket},
-	    [{status, Code},
-	     {allheaders, Acc},
-	     {streamcontent_from_pid, ContentType, PushStream}];
-	Generator when is_function(Generator, 0) ->
-	    YawsPid = self(),
-	    spawn(fun() -> handle_stream(Generator, YawsPid) end),
-	    [{status, Code},
-	     {allheaders, Acc},
-	     {streamcontent_with_timeout, ContentType, <<>>, infinity}];
+	{push_stream, GeneratorPid, Timeout} when is_pid(GeneratorPid) ->
+	    GeneratorPid ! {push_stream_init, ?MODULE, self(), Socket},
+	    receive
+		{push_stream_init, GeneratorPid, Code, Headers, _TransferEncoding} ->
+		    ContentType = get_content_type(Headers),
+		    Acc = get_yaws_headers(Headers),
+		    [{status, Code},
+		     {allheaders, Acc},
+		     {streamcontent_from_pid, ContentType, GeneratorPid}]
+	    after Timeout ->
+		    [{status, 504}, {content, "text/plain", <<"Gateway Timeout">>}]
+	    end;
 	Body ->
-	    [{status, Code},
-	     {allheaders, Acc},
-	     {content, ContentType, Body}]
+	    {Code, _} = ewgi_api:response_status(Ctx),
+	    H = ewgi_api:response_headers(Ctx),
+	    ContentType = get_content_type(H),
+	    Acc = get_yaws_headers(H),
+	    case Body of
+		Generator when is_function(Generator, 0) ->
+		    YawsPid = self(),
+		    spawn(fun() -> handle_stream(Generator, YawsPid) end),
+		    [{status, Code},
+		     {allheaders, Acc},
+		     {streamcontent_with_timeout, ContentType, <<>>, infinity}];
+		_ ->
+		    [{status, Code},
+		     {allheaders, Acc},
+		     {content, ContentType, Body}]
+	    end
     end.
 
 get_yaws_headers(H) ->

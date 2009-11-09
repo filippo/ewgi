@@ -231,22 +231,24 @@ parse_other_header1(K0, {K, V}, Acc) ->
     gb_trees:enter(K, [{K0, V}|Ex], Acc).
 
 handle_result(#mod{config_db=Db}=A, Ctx) ->
-    {Code, _} = ewgi_api:response_status(Ctx),
-    Headers0 = [{string:to_lower(H), binary_to_list(iolist_to_binary(V))} || {H, V} <- ewgi_api:response_headers(Ctx)],
-    Headers = lists:foldl(fun fold_header/2, [], Headers0),
-    case ewgi_api:response_message_body(Ctx) of
-		PushStream when is_pid(PushStream) ->
-			PushStream ! {push_stream_data, ?MODULE, A#mod.socket},
+	case ewgi_api:response_message_body(Ctx) of
+		{push_stream, GeneratorPid, Timeout} when is_pid(GeneratorPid) ->
 			ChunkedAllowed = not httpd_response:is_disable_chunked_send(Db),
-            handle_push_stream(A, ChunkedAllowed, Code, Headers, PushStream);
-        Body when is_function(Body, 0) ->
-            ChunkedAllowed = not httpd_response:is_disable_chunked_send(Db),
-            handle_result_wrap_stream(A, ChunkedAllowed, Code, Headers, Body);
-        Body0 ->
-            Body = [Body0],
-	    Length = {content_length, integer_to_list(erlang:iolist_size(Body))},
-            {proceed, [{response, {response, [{code, Code}, Length] ++ Headers, Body}}]}
-    end.
+			handle_push_stream(A, Ctx, ChunkedAllowed, GeneratorPid, Timeout);
+		Body0 ->
+			{Code, _} = ewgi_api:response_status(Ctx),
+			Headers0 = [{string:to_lower(H), binary_to_list(iolist_to_binary(V))} || {H, V} <- ewgi_api:response_headers(Ctx)],
+			Headers = lists:foldl(fun fold_header/2, [], Headers0),
+			case Body0 of
+				Body when is_function(Body, 0) ->
+					ChunkedAllowed = not httpd_response:is_disable_chunked_send(Db),
+					handle_result_wrap_stream(A, ChunkedAllowed, Code, Headers, Body);
+				_ ->
+					Body = [Body0],
+				Length = {content_length, integer_to_list(erlang:iolist_size(Body))},
+					{proceed, [{response, {response, [{code, Code}, Length] ++ Headers, Body}}]}
+			end
+	end.
 
 handle_result_wrap_stream(#mod{http_version=Ver}, ChunkedAllowed, Code, Headers, Body0)
   when (Ver =/= "HTTP/1.1") or (not ChunkedAllowed) ->
@@ -285,17 +287,42 @@ stream_to_list(S) when is_function(S, 0) ->
         {} ->     []
     end.
 
-handle_push_stream(#mod{http_version=Ver}, ChunkedAllowed, Code, Headers, PushStream)
+handle_push_stream(#mod{http_version=Ver}, _Ctx, ChunkedAllowed, GeneratorPid, _Timeout)
   when (Ver =/= "HTTP/1.1") or (not ChunkedAllowed) ->
-	PushStream ! {discard, self()},
+	GeneratorPid ! {discard, self()},
     Body = "HTTP/1.1 required for streaming live data!",
     Length = {content_length, integer_to_list(erlang:iolist_size(Body))},
-    {proceed, [{response, {response, [{code, Code}, Length] ++ Headers, Body}}]};
-handle_push_stream(A, true, Code, Headers, PushStream) ->
-    ExtraHeaders = httpd_response:cache_headers(A),
-    httpd_response:send_header(A, Code, ExtraHeaders ++ [{transfer_encoding, "chunked"}|Headers]),
+	NotSupported = 505,
+    {proceed, [{response, {response, [{code, NotSupported}, Length], Body}}]};
+handle_push_stream(A, Ctx, true, GeneratorPid, Timeout) ->
 	Socket = A#mod.socket,
-	wait_for_streamcontent_pid(Socket, PushStream).
+	GeneratorPid ! {push_stream_init, ?MODULE, self(), Socket},
+	receive
+	{push_stream_init, GeneratorPid, Code, Headers0, TransferEncoding} ->
+		Headers1 = [{string:to_lower(H), binary_to_list(iolist_to_binary(V))} || {H, V} <- Headers0],
+		Headers = lists:foldl(fun fold_header/2, [], Headers1),
+		ExtraHeaders = httpd_response:cache_headers(A),
+		httpd_response:send_header(A, Code, ExtraHeaders ++ Headers),
+		case TransferEncoding of
+			chunked ->
+				GeneratorPid ! {ok, self()}
+			;_ ->
+				%% WARNING: we're depending on the original ewgi_context here!!!!
+				case ewgi_api:request_method(Ctx) of
+					'HEAD' ->
+						GeneratorPid ! {discard, self()};
+					_ ->
+						GeneratorPid ! {ok, self()}
+				end	
+		end,
+		Socket = A#mod.socket,
+		wait_for_streamcontent_pid(Socket, GeneratorPid)
+	after Timeout ->
+		Body = "Gateway Timeout",
+		Length = {content_length, integer_to_list(erlang:iolist_size(Body))},
+		GatewayTimeout = 504,
+		{proceed, [{response, {response, [{code, GatewayTimeout}, Length], Body}}]}
+	end.
 
 %% Copied/adapted from yaws_server
 wait_for_streamcontent_pid(CliSock, ContentPid) ->
