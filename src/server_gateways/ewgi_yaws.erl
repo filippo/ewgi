@@ -68,13 +68,19 @@ handle_result(Ctx, Socket) ->
     case ewgi_api:response_message_body(Ctx) of
 	PushStream when is_pid(PushStream) ->
 	    PushStream ! {push_stream_data, ?MODULE, Socket},
-	    [{status, Code}, {streamcontent_from_pid, ContentType, PushStream}];
+	    [{status, Code},
+	     {allheaders, Acc},
+	     {streamcontent_from_pid, ContentType, PushStream}];
 	Generator when is_function(Generator, 0) ->
 	    YawsPid = self(),
 	    spawn(fun() -> handle_stream(Generator, YawsPid) end),
-	    [{status, Code}, {streamcontent_with_timeout, ContentType, <<>>, infinity}];
+	    [{status, Code},
+	     {allheaders, Acc},
+	     {streamcontent_with_timeout, ContentType, <<>>, infinity}];
 	Body ->
-	    [{status, Code}, {content, ContentType, Body}|Acc]
+	    [{status, Code},
+	     {allheaders, Acc},
+	     {content, ContentType, Body}]
     end.
 
 get_yaws_headers(H) ->
