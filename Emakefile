@@ -1,30 +1,11 @@
 % -*- mode: erlang -*-
- 
-{["src/*"],
+
+{["src/*",
+  "src/server_gateways/*",
+  "src/middleware/*/*",
+  "src/utils/*"],
  [{i, "include"},
   {outdir, "ebin"},
   debug_info,
   {d, debug}]
 }.
-
-{["src/server_gateways/*"],
- [{i, "include"},
-  {outdir, "ebin"},
-  debug_info,
-  {d, debug}]
-}.
-
-{["src/middleware/*/*"],
- [{i, "include"},
-  {outdir, "ebin"},
-  debug_info,
-  {d, debug}]
-}.
-
-{["src/utils/*"],
- [{i, "include"},
-  {outdir, "ebin"},
-  debug_info,
-  {d, debug}]
-}.
-
