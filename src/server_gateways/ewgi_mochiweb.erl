@@ -295,9 +295,10 @@ parse_element(server_name, Req) ->
     end;
 
 parse_element(server_port, Req) ->
-    HostPort = Req:get_header_value(host),
-    case HostPort of
-        HostPort when is_list(HostPort) ->
+    HostPort0 = Req:get_header_value(host),
+    case HostPort0 of
+        HostPort0 when is_list(HostPort0) ->
+            HostPort = string:tokens(HostPort0, ":"),
             case length(HostPort) of
                 2 -> lists:nth(2, HostPort);
                 _ -> undefined
