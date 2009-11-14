@@ -2,6 +2,24 @@
 
 -export([run/2]).
 
+%% FIXME: look at the specs for all statuses.
+-define(VALID_STATUS_CODES, [200,
+                             201,
+                             202,
+                             301,
+                             302,
+                             303,
+                             304,
+                             305,
+                             306,
+                             307,
+                             400,
+                             401,
+                             402,
+                             403,
+                             404,
+                             500]).
+
 %% ewgi records definitions
 %% to be removed after end of code refactoring
 -record(ewgi_spec, {
@@ -239,6 +257,26 @@ check_server_software(_Server, Ctx) ->
     report_error("server_software has to be a list", Ctx).
 
 %%
+%% check ewgi response record
+%%
+check_status({StatusCode, StatusMsg}, Ctx) when is_integer(StatusCode), is_list(StatusMsg) ->
+    %% check status code is valid
+    case lists:member(StatusCode, ?VALID_STATUS_CODES) of
+        true ->
+            Ctx;
+        false ->
+            report_error("invalid response status", Ctx)
+    end;
+check_status(_Status, Ctx) ->
+    report_error("invalid response status", Ctx).
+
+check_headers(_Hdrs, Ctx) ->
+    Ctx.
+
+check_message_body(_Body, Ctx) ->
+    Ctx.
+
+%%
 %% checks
 %%
 %% ewgi_spec record check
@@ -302,7 +340,14 @@ check(server_port, #ewgi_context{request=Req}=Ctx) ->
 check(server_protocol, #ewgi_context{request=Req}=Ctx) ->
     check_server_protocol(Req#ewgi_request.server_protocol, Ctx);
 check(server_software, #ewgi_context{request=Req}=Ctx) ->
-    check_server_software(Req#ewgi_request.server_software, Ctx).
+    check_server_software(Req#ewgi_request.server_software, Ctx);
+%% response checks
+check(status, #ewgi_context{response=Resp}=Ctx) ->
+    check_status(Resp#ewgi_response.status, Ctx);
+check(headers, #ewgi_context{response=Resp}=Ctx) ->
+    check_headers(Resp#ewgi_response.headers, Ctx);
+check(message_body, #ewgi_context{response=Resp}=Ctx) ->
+    check_message_body(Resp#ewgi_response.message_body, Ctx).
 
 %%
 %% Check request
@@ -317,7 +362,8 @@ check_request(Req, Ctx) when is_record(Req, ewgi_request) ->
 %% Check response
 %%
 check_response(Resp, Ctx) when is_record(Resp, ewgi_response) ->
-    Ctx.
+    lists:foldl(fun check/2, Ctx, [status, headers, message_body]).
+
 
 %%
 %% Check ewgi context
