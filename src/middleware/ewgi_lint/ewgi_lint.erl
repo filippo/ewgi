@@ -2,23 +2,13 @@
 
 -export([run/2]).
 
-%% FIXME: look at the specs for all statuses.
--define(VALID_STATUS_CODES, [200,
-                             201,
-                             202,
-                             301,
-                             302,
-                             303,
-                             304,
-                             305,
-                             306,
-                             307,
-                             400,
-                             401,
-                             402,
-                             403,
-                             404,
-                             500]).
+%% http status code (from http rfc)
+-define(VALID_STATUS_CODES, 
+        [100, 101,
+         200, 201, 202, 203, 204, 205, 206,
+         300, 301, 302, 303, 304, 305, 307,
+         400, 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417,
+         500, 501, 502, 503, 504, 505]).
 
 %% ewgi records definitions
 %% to be removed after end of code refactoring
