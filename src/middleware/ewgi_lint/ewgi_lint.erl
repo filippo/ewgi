@@ -260,8 +260,10 @@ check_status({StatusCode, StatusMsg}, Ctx) when is_integer(StatusCode), is_list(
 check_status(_Status, Ctx) ->
     report_error("invalid response status", Ctx).
 
+check_headers(Hdrs, Ctx) when is_list(Hdrs) ->
+    Ctx;
 check_headers(_Hdrs, Ctx) ->
-    Ctx.
+    report_error("headers have to be a list of {K, V} pairs", Ctx).
 
 check_message_body(_Body, Ctx) ->
     Ctx.
