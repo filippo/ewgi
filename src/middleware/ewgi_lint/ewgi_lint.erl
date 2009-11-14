@@ -127,22 +127,6 @@ check_gateway_interface("EWGI/1.0", Ctx) ->
 check_gateway_interface(_, Ctx) ->
     report_error("gateway interface has to be \"EWGI/1.0\"", Ctx).
 
-%% check remote address
-%% FIXME: yaws supports only ipv4?
-check_ip_chunk(IPChunk, Ctx) ->
-    IPChunk1 = list_to_integer(IPChunk),
-    case IPChunk1 of
-        X when X < 0   -> report_error("invalid remote_addr", Ctx);
-        X when X > 255 -> report_error("invalid remote_addr", Ctx);
-        _              -> Ctx
-    end.
-            
-check_remote_addr(IP, Ctx) when is_list(IP) ->
-    IPChunks = string:tokens(IP),
-    lists:foldl(fun check_ip_chunk/2, Ctx, IPChunks);
-check_remote_addr(_IP, Ctx) ->
-    report_error("remote address has to be a list", Ctx).
-
 %% FIXME: check http headers
 
 %% check path info
@@ -164,6 +148,95 @@ check_query_string(QS, Ctx) when is_list(QS) ->
     Ctx;
 check_query_string(_, Ctx) ->
     report_error("query_string has to be a list", Ctx).
+
+%% check remote address
+%% FIXME: yaws supports only ipv4?
+check_ip_chunk(IPChunk, Ctx) ->
+    IPChunk1 = list_to_integer(IPChunk),
+    case IPChunk1 of
+        X when X < 0   -> report_error("invalid remote_addr", Ctx);
+        X when X > 255 -> report_error("invalid remote_addr", Ctx);
+        _              -> Ctx
+    end.
+            
+check_remote_addr(IP, Ctx) when is_list(IP) ->
+    IPChunks = string:tokens(IP),
+    lists:foldl(fun check_ip_chunk/2, Ctx, IPChunks);
+check_remote_addr(_IP, Ctx) ->
+    report_error("remote address has to be a list", Ctx).
+
+%% check remote ident
+check_remote_ident(undefined, Ctx) ->
+    Ctx;
+check_remote_ident(Id, Ctx) when is_list(Id) ->
+    Ctx;
+check_remote_ident(_Id, Ctx) ->
+    report_error("remote ident has to be either a list or 'undefined'", Ctx).
+
+%% check remote user
+check_remote_user(undefined, Ctx) ->
+    Ctx;
+check_remote_user(User, Ctx) when is_list(User) ->
+    Ctx;
+check_remote_user(_User, Ctx) ->
+    report_error("remote user has to be either a list or 'undefined'", Ctx).
+
+%% check request method
+%% FIXME: check specs fo rall available methods
+check_request_method("GET", Ctx) ->
+    Ctx;
+check_request_method("POST", Ctx) ->
+    Ctx;
+check_request_method("PUT", Ctx) ->
+    Ctx;
+check_request_method("DELETE", Ctx) ->
+    Ctx;
+check_request_method("HEAD", Ctx) ->
+    Ctx;
+check_request_method("INFO", Ctx) ->
+    Ctx;
+check_request_method("OPTIONS", Ctx) ->
+    Ctx;
+check_request_method(_Method, Ctx) ->
+    report_error("invalid request method", Ctx).
+
+%% check script name
+check_script_name(Script, Ctx) when is_list(Script) ->
+    Ctx;
+check_script_name(_Script, Ctx) ->
+    report_error("script_name has to be a list", Ctx).
+
+%% check server name
+check_server_name(Server, Ctx) when is_list(Server) ->
+    Ctx;
+check_server_name(_Server, Ctx) ->
+    report_error("server_name has to be a list", Ctx).
+
+%% check server port
+check_server_port(Port, Ctx) when is_list(Port) ->
+    try list_to_integer(Port) of
+        _ -> Ctx
+    catch
+        _Err ->
+            report_error("invalid server_port", Ctx)
+    end;
+check_server_port(_, Ctx) ->
+    report_error("server_port has to be a list", Ctx).
+%% check server protocol
+check_server_protocol("HTTP/1.1", Ctx) ->
+    Ctx;
+check_server_protocol("HTTP/1.0", Ctx) ->
+    Ctx;
+check_server_protocol("HTTP/0.9", Ctx) ->
+    Ctx;
+check_server_protocol(_Proto, Ctx) ->
+    report_error("invalid server protocol", Ctx).
+
+%% check server software
+check_server_software(Server, Ctx) when is_list(Server) ->
+    Ctx;
+check_server_software(_Server, Ctx) ->
+    report_error("server_software has to be a list", Ctx).
 
 %%
 %% checks
@@ -213,7 +286,23 @@ check(path_translated, #ewgi_context{request=Req}=Ctx) ->
 check(query_string, #ewgi_context{request=Req}=Ctx) ->
     check_query_string(Req#ewgi_request.query_string, Ctx);
 check(remote_addr, #ewgi_context{request=Req}=Ctx) ->
-    check_remote_addr(Req#ewgi_request.remote_addr, Ctx).
+    check_remote_addr(Req#ewgi_request.remote_addr, Ctx);
+check(remote_ident, #ewgi_context{request=Req}=Ctx) ->
+    check_remote_ident(Req#ewgi_request.remote_ident, Ctx);
+check(remote_user, #ewgi_context{request=Req}=Ctx) ->
+    check_remote_user(Req#ewgi_request.remote_user, Ctx);
+check(request_method, #ewgi_context{request=Req}=Ctx) ->
+    check_request_method(Req#ewgi_request.request_method, Ctx);
+check(script_name, #ewgi_context{request=Req}=Ctx) ->
+    check_script_name(Req#ewgi_request.script_name, Ctx);
+check(server_name, #ewgi_context{request=Req}=Ctx) ->
+    check_server_name(Req#ewgi_request.server_name, Ctx);
+check(server_port, #ewgi_context{request=Req}=Ctx) ->
+    check_server_port(Req#ewgi_request.server_port, Ctx);
+check(server_protocol, #ewgi_context{request=Req}=Ctx) ->
+    check_server_protocol(Req#ewgi_request.server_protocol, Ctx);
+check(server_software, #ewgi_context{request=Req}=Ctx) ->
+    check_server_software(Req#ewgi_request.server_software, Ctx).
 
 %%
 %% Check request
